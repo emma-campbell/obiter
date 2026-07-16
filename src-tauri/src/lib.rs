@@ -1,9 +1,10 @@
+mod secrets;
 mod settings;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use settings::{RecoveryNotice, Settings};
+use settings::{AiProvider, RecoveryNotice, Settings};
 use tauri::Manager;
 
 /// In-memory settings behind managed state. The backend is the source of
@@ -53,6 +54,25 @@ fn update_settings(
     Ok(settings)
 }
 
+// API keys live in the OS keychain, never in the settings JSON. The
+// provider argument is the typed enum, so keychain accounts can only ever
+// be known provider names. No command returns the key value.
+
+#[tauri::command]
+fn set_api_key(provider: AiProvider, key: String) -> Result<(), String> {
+    secrets::set_api_key(provider.as_str(), &key).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn has_api_key(provider: AiProvider) -> Result<bool, String> {
+    secrets::has_api_key(provider.as_str()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_api_key(provider: AiProvider) -> Result<(), String> {
+    secrets::delete_api_key(provider.as_str()).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -80,7 +100,10 @@ pub fn run() {
             get_settings,
             update_settings,
             get_recovery_notice,
-            reload_settings
+            reload_settings,
+            set_api_key,
+            has_api_key,
+            delete_api_key
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
