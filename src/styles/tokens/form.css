@@ -1,0 +1,21 @@
+/* Obiter — form & surface tokens.
+   Radius is deliberately near-zero: the mark is mitered and the interface
+   agrees. 3px is the ceiling, and exists only so inputs don't look broken.
+   Borders over shadows — the app is a text file, not a stack of cards, so
+   there is no elevation system. Floating surfaces get a hairline instead. */
+:root {
+  --radius: 2px;
+  --radius-lg: 3px; /* inputs, floating surfaces */
+  --radius-full: 9999px; /* spinners only — a circle must be a circle */
+
+  --border: 1px solid var(--ash);
+  --focus-ring: 0 0 0 2px var(--pencil-500);
+  --focus-offset: 2px;
+
+  /* controls are 32px — dense, for people who'd rather see another line */
+  --control: 32px;
+  --control-sm: 24px;
+
+  /* no elevation. shadow tokens exist and resolve to nothing, on purpose. */
+  --shadow-none: none;
+}

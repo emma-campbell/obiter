@@ -1,0 +1,213 @@
+/* Obiter — note view layout + rendered prose.
+   Values are the handoff spec, not the 4/8px grid — where it says 2px or
+   62ch, it means exactly that. Colors reference tokens (same hex). */
+
+.note-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  font-family: var(--font-sans);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+/* --- toolbar --- */
+.note-view__toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--ash);
+}
+
+.note-view__crumb-dir,
+.note-view__crumb-file {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.note-view__crumb-dir {
+  color: var(--slate);
+}
+.note-view__crumb-file {
+  color: var(--ink);
+}
+
+.note-view__divider {
+  width: 1px;
+  height: 18px;
+  background: var(--ash);
+  margin: 0 6px;
+}
+
+.note-view__toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.note-view__words {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--slate);
+}
+
+/* --- scroll region --- */
+.note-view__scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 48px 0 80px;
+}
+
+.note-view__page {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  gap: 40px;
+  max-width: calc(var(--rail) + 72ch + 80px);
+  margin: 0 auto;
+  padding: 0 40px;
+  align-items: start;
+}
+
+.note-view__rail {
+  grid-column: 1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--pencil-600);
+  text-align: right;
+  padding-top: 14px;
+}
+
+.note-view__rail-mark {
+  display: block;
+  color: var(--pencil-500);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+/* pinned to column 2 so hiding the rail doesn't reflow the text */
+.note-view__editor {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* --- footer --- */
+.note-view__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 30px;
+  padding: 0 16px;
+  border-top: 1px solid var(--chalk);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--slate);
+}
+
+.note-view__saved {
+  color: var(--pencil-600);
+}
+.note-view__disk {
+  margin-left: auto;
+}
+
+/* --- focus mode dims the chrome, never the text --- */
+.note-view--focus .note-view__toolbar,
+.note-view--focus .note-view__footer {
+  opacity: 0.35;
+}
+
+/* --- rendered prose (the generated .ProseMirror DOM) --- */
+.obiter-pm {
+  min-width: 0;
+}
+.obiter-pm .ProseMirror {
+  outline: none;
+  white-space: break-spaces;
+  word-wrap: break-word;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.obiter-pm .ProseMirror:focus,
+.obiter-pm .ProseMirror-focused {
+  outline: none;
+}
+.obiter-pm .ProseMirror h1 {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 20px;
+}
+.obiter-pm .ProseMirror h2 {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 28px 0 8px;
+}
+.obiter-pm .ProseMirror h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 20px 0 6px;
+}
+.obiter-pm .ProseMirror p {
+  margin: 0 0 14px;
+}
+.obiter-pm .ProseMirror ul,
+.obiter-pm .ProseMirror ol {
+  padding-left: 1.2em;
+  margin: 0 0 14px;
+}
+.obiter-pm .ProseMirror li {
+  margin-bottom: 6px;
+  color: var(--graphite);
+}
+.obiter-pm .ProseMirror li p {
+  margin: 0;
+}
+.obiter-pm .ProseMirror blockquote {
+  margin: 0 0 14px;
+  padding: 2px 0 2px 16px;
+  border-left: 2px solid var(--ash);
+  color: var(--graphite);
+}
+.obiter-pm .ProseMirror code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--chalk);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.obiter-pm .ProseMirror pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--chalk);
+  padding: 16px;
+  border-radius: 3px;
+  overflow: auto;
+  margin: 0 0 14px;
+}
+.obiter-pm .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+.obiter-pm .ProseMirror a {
+  color: var(--pencil-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.obiter-pm .ProseMirror ::selection {
+  background: var(--pencil-200);
+}

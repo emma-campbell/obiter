@@ -1,0 +1,16 @@
+/* Obiter — spacing tokens.
+   8px-based. The mark's 3-unit module governs the mark only; forcing it onto
+   the UI grid would be a costume. */
+:root {
+  --u-1: 4px;
+  --u-2: 8px;
+  --u-3: 12px;
+  --u-4: 16px;
+  --u-6: 24px;
+  --u-8: 32px;
+  --u-12: 48px;
+  --u-16: 64px;
+
+  /* layout */
+  --rail: 190px; /* the margin rail — the signature device */
+}

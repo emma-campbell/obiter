@@ -1,0 +1,41 @@
+/* Obiter — typography tokens.
+   One rule, conceptual not aesthetic: sans is the app talking, mono is your
+   text and the machine's. There is no third "brand" face — the display face
+   IS the utility mono face, because the wordmark should look like something
+   you typed into a note. Sentence case everywhere; weight is never emphasis. */
+:root {
+  /* families */
+  --font-sans: "Public Sans", system-ui, sans-serif; /* interface */
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace; /* content, data, wordmark */
+
+  /* sizes */
+  --text-micro: 11.5px; /* labels, eyebrows, metadata (mono) */
+  --text-small: 14px; /* secondary, never primary content */
+  --text-base: 16px; /* body */
+  --text-heading: 17px;
+  --text-title: 26px;
+  --text-display: 34px; /* wordmark + page titles only (mono) */
+
+  /* weights — never 600/700. Hierarchy carries emphasis, not weight. */
+  --weight-light: 300; /* above 28px only */
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* line heights */
+  --leading-display: 1.15;
+  --leading-title: 1.25;
+  --leading-heading: 1.4;
+  --leading-body: 1.65;
+  --leading-small: 1.5;
+
+  /* tracking */
+  --tracking-display: -0.02em;
+  --tracking-title: -0.015em;
+  --tracking-eyebrow: 0.08em;
+
+  /* measure — a notes app must set a comfortable line length */
+  --measure: 62ch;
+
+  /* stylistic set: Public Sans ss01 */
+  --font-features: "ss01";
+}

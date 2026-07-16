@@ -1,0 +1,43 @@
+/* Obiter — color tokens.
+   Six warm-leaning neutrals and one accent (the blue pencil). Danger is
+   unclaimed by the accent so it stays unambiguous — spend it only on
+   destruction. Values are the single source of truth shared with theme.ts. */
+:root {
+  /* neutrals — warm by ~4% */
+  --paper: #faf9f7; /* app background */
+  --chalk: #efeeea; /* raised surface, code bg */
+  --ash: #d6d4cd; /* borders, rules */
+  --slate: #9a9891; /* metadata, placeholder */
+  --graphite: #55534e; /* secondary text */
+  --ink: #1c1b18; /* primary text, the mark */
+
+  /* accent — the blue pencil. Marks, never decorates. */
+  --pencil-50: #eaf6fb;
+  --pencil-200: #9edcf0;
+  --pencil-500: #0e8fbc; /* fills, focus ring, cursor */
+  --pencil-600: #0a6e93; /* text under 18px (500 fails contrast) */
+
+  /* danger — destruction only */
+  --red-500: #b3261e;
+
+  /* ---- semantic aliases ---- */
+  --bg: var(--paper);
+  --bg-subtle: var(--chalk);
+  --bg-emphasized: var(--ash);
+  --bg-inverted: var(--ink);
+
+  --text-body: var(--ink);
+  --text-muted: var(--graphite);
+  --text-subtle: var(--slate);
+  --text-inverted: var(--paper);
+
+  --border-color: var(--ash);
+  --border-muted: var(--chalk);
+  --border-emphasized: var(--slate);
+
+  --accent: var(--pencil-500); /* fills, focus, cursor */
+  --accent-text: var(--pencil-600); /* accent used as small text/links */
+  --accent-subtle: var(--pencil-50);
+
+  --danger: var(--red-500);
+}

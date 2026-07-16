@@ -1,0 +1,44 @@
+/* Obiter — base element defaults.
+   Applies the brand to bare HTML so specimen cards and consumers get sane
+   starting styles. Kept minimal; components own their own styling. */
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
+  font-feature-settings: var(--font-features);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+a:hover {
+  color: var(--pencil-500);
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pencil-500);
+  outline-offset: var(--focus-offset);
+}
+
+::selection {
+  background: var(--pencil-200);
+  color: var(--ink);
+}

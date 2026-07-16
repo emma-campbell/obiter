@@ -1,0 +1,24 @@
+/* Obiter — style entry. Token layers first, then element defaults.
+   Fonts are self-hosted via @fontsource imports in main.tsx (the design
+   system's fonts.css loads Google Fonts; the app must not phone home). */
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/form.css";
+@import "./tokens/base.css";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
