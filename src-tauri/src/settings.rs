@@ -108,6 +108,16 @@ pub enum AiProvider {
     Anthropic,
 }
 
+impl AiProvider {
+    /// Stable name used as the keychain account for this provider's API
+    /// key. Must match the serde wire name.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AiProvider::Anthropic => "anthropic",
+        }
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
