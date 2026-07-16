@@ -43,6 +43,10 @@ function RootLayout() {
         e.preventDefault();
         setSidebar((s) => !s);
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setSettings(true);
+      }
       if (e.key === "Escape") {
         setCmd(false);
         setSettings(false);

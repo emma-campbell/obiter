@@ -77,6 +77,7 @@ fn delete_api_key(provider: AiProvider) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let path = app.path().app_config_dir()?.join("settings.json");
             // Corrupt file → backed up as .bak, reset to defaults, notice
