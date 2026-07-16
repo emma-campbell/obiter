@@ -46,6 +46,14 @@ export interface AiSettings {
   baseUrl: string | null;
 }
 
+/** Sent by the backend when a corrupt settings file was reset at startup. */
+export interface RecoveryNotice {
+  /** Where the broken original was preserved (settings.json.bak). */
+  backupPath: string;
+  /** The parse error that made recovery necessary. */
+  error: string;
+}
+
 export interface Settings {
   version: number;
   vault: VaultSettings;

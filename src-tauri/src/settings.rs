@@ -196,6 +196,23 @@ impl fmt::Display for SettingsError {
 
 impl std::error::Error for SettingsError {}
 
+/// What the user needs to know when their settings file couldn't be read
+/// and was reset: where the original went, and why it failed.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecoveryNotice {
+    pub backup_path: String,
+    pub error: String,
+}
+
+/// Result of a startup load: the settings to run with, plus a recovery
+/// notice when the file on disk was corrupt and had to be reset.
+#[derive(Debug)]
+pub struct LoadOutcome {
+    pub settings: Settings,
+    pub recovery: Option<RecoveryNotice>,
+}
+
 /// Read settings from `path`. A missing file yields defaults without
 /// creating the file — it's written on first save, not first launch.
 pub fn load(path: &Path) -> Result<Settings, SettingsError> {
@@ -204,6 +221,42 @@ pub fn load(path: &Path) -> Result<Settings, SettingsError> {
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Settings::default()),
         Err(e) => Err(SettingsError::Io(e)),
     }
+}
+
+/// Startup load with corrupt-file recovery. A file that fails to parse is
+/// renamed to `<file>.bak` alongside — never overwritten in place — then
+/// fresh defaults are written and returned with a recovery notice. The
+/// backup rename happens before any write, so a fixable hand-edit is
+/// always preserved. Real I/O errors (permissions, etc.) propagate: they
+/// aren't corruption, and resetting on them would destroy a readable file.
+pub fn load_or_recover(path: &Path) -> Result<LoadOutcome, SettingsError> {
+    let parse_error = match load(path) {
+        Ok(settings) => {
+            return Ok(LoadOutcome {
+                settings,
+                recovery: None,
+            });
+        }
+        Err(SettingsError::Parse(e)) => e,
+        Err(e) => return Err(e),
+    };
+
+    let backup = path.with_extension("json.bak");
+    if backup.exists() {
+        fs::remove_file(&backup).map_err(SettingsError::Io)?;
+    }
+    fs::rename(path, &backup).map_err(SettingsError::Io)?;
+
+    let settings = Settings::default();
+    save(path, &settings)?;
+
+    Ok(LoadOutcome {
+        settings,
+        recovery: Some(RecoveryNotice {
+            backup_path: backup.to_string_lossy().into_owned(),
+            error: parse_error.to_string(),
+        }),
+    })
 }
 
 /// Persist settings to `path` as pretty-printed JSON, atomically: the
@@ -339,6 +392,103 @@ mod tests {
 
         let loaded = load(&path).unwrap();
         assert_eq!(loaded.appearance.theme, Theme::Dark);
+    }
+
+    #[test]
+    fn unknown_keys_are_ignored_at_any_level() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+        // A typo'd key and a newer version's key, top-level and nested.
+        fs::write(
+            &path,
+            r#"{
+                "version": 1,
+                "keybindings": { "save": "cmd+s" },
+                "vault": { "path": "/notes", "autosaev": true },
+                "appearance": { "theme": "dark", "vibrancy": "full" }
+            }"#,
+        )
+        .unwrap();
+
+        let loaded = load(&path).unwrap();
+
+        assert_eq!(loaded.vault.path, Some("/notes".to_string()));
+        assert_eq!(loaded.appearance.theme, Theme::Dark);
+        // Untouched sections fall back to defaults.
+        assert_eq!(loaded.ai, AiSettings::default());
+    }
+
+    #[test]
+    fn wrong_type_for_known_key_is_a_parse_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+        save(&path, &Settings::default()).unwrap();
+
+        let edited = fs::read_to_string(&path)
+            .unwrap()
+            .replace("\"autosaveDebounceMs\": 1000", "\"autosaveDebounceMs\": \"fast\"");
+        fs::write(&path, edited).unwrap();
+
+        assert!(matches!(load(&path), Err(SettingsError::Parse(_))));
+    }
+
+    #[test]
+    fn recover_is_a_no_op_on_a_valid_or_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+
+        // Missing: defaults, no notice, still no file created.
+        let outcome = load_or_recover(&path).unwrap();
+        assert_eq!(outcome.settings, Settings::default());
+        assert!(outcome.recovery.is_none());
+        assert!(!path.exists());
+
+        // Valid: parses, no notice, no backup appears.
+        let mut settings = Settings::default();
+        settings.appearance.theme = Theme::Light;
+        save(&path, &settings).unwrap();
+        let outcome = load_or_recover(&path).unwrap();
+        assert_eq!(outcome.settings, settings);
+        assert!(outcome.recovery.is_none());
+        assert!(!path.with_extension("json.bak").exists());
+    }
+
+    #[test]
+    fn corrupt_file_is_backed_up_then_reset_to_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+        let garbage = "{ \"version\": 1, \"appearance\": { \"theme\": \"blurp";
+        fs::write(&path, garbage).unwrap();
+
+        let outcome = load_or_recover(&path).unwrap();
+
+        // App runs on defaults and the notice says what happened.
+        assert_eq!(outcome.settings, Settings::default());
+        let notice = outcome.recovery.expect("recovery notice");
+        assert!(notice.backup_path.ends_with("settings.json.bak"));
+        assert!(!notice.error.is_empty());
+
+        // The broken original is preserved byte-for-byte as the backup...
+        let backup = path.with_extension("json.bak");
+        assert_eq!(fs::read_to_string(&backup).unwrap(), garbage);
+        // ...and the live file is fresh, parseable defaults.
+        assert_eq!(load(&path).unwrap(), Settings::default());
+    }
+
+    #[test]
+    fn recovery_overwrites_a_stale_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+        fs::write(path.with_extension("json.bak"), "old backup").unwrap();
+        fs::write(&path, "fresh garbage {").unwrap();
+
+        let outcome = load_or_recover(&path).unwrap();
+
+        assert!(outcome.recovery.is_some());
+        assert_eq!(
+            fs::read_to_string(path.with_extension("json.bak")).unwrap(),
+            "fresh garbage {"
+        );
     }
 
     #[test]
