@@ -15,3 +15,8 @@ export function getRecoveryNotice(): Promise<RecoveryNotice | null> {
 export function updateSettings(settings: Settings): Promise<Settings> {
   return invoke<Settings>("update_settings", { settings });
 }
+
+/** Re-read the file on disk. Rejects with the parse error on failure. */
+export function reloadSettings(): Promise<Settings> {
+  return invoke<Settings>("reload_settings");
+}
