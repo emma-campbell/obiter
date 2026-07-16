@@ -6,7 +6,8 @@
 // markdown on save (getMarkdown).
 
 import { defineBasicExtension } from "prosekit/basic";
-import { createEditor } from "prosekit/core";
+import { createEditor, union } from "prosekit/core";
+import { defineActiveLine } from "./active-line";
 import { htmlToMd, mdToHtml } from "./markdown";
 
 export interface ActiveMarks {
@@ -53,7 +54,7 @@ const run = (fn: () => unknown): void => {
 export function mount(el: HTMLElement, md: string, handlers: NoteEditorHandlers = {}): NoteEditor {
   const { onState } = handlers;
   const editor = createEditor({
-    extension: defineBasicExtension(),
+    extension: union(defineBasicExtension(), defineActiveLine()),
     defaultContent: mdToHtml(md),
   });
   editor.mount(el);

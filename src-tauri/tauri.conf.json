@@ -12,7 +12,13 @@
   "app": {
     "windows": [
       {
-        "title": "obiter",
+        "title": "Obiter",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 14,
+          "y": 21
+        },
         "width": 800,
         "height": 600
       }

@@ -3,37 +3,23 @@ import { Bold, Code, Italic, Link, List } from "lucide-react";
 import { IconButton } from "../components/core/IconButton";
 import { Kbd } from "../components/core/Kbd";
 import { mount, type ActiveMarks, type NoteEditor } from "../editor/prosekit-editor";
-import "./NoteView.css";
+import type { NoteFile } from "./notes-data";
+import "./Editor.css";
 
-export interface NoteViewProps {
-  /** directory shown in the breadcrumb, e.g. "~/Notes/" */
-  dirLabel: string;
-  /** filename shown in the breadcrumb, e.g. "on-keeping-notes.md" */
-  fileName: string;
-  /** the note's markdown as read from disk */
-  markdown: string;
+export interface EditorProps {
+  /** the open note — the editor re-mounts when `file.path` changes */
+  file: NoteFile;
   /** called with the serialized markdown on ⌘S — write the file here */
   onSave?: (markdown: string) => void;
-  railVisible?: boolean;
-  focusMode?: boolean;
-  measure?: "58ch" | "62ch" | "72ch";
 }
 
 /**
- * The core writing surface: a WYSIWYG editor over a markdown file. The
- * editing experience is rich, but the file on disk stays plain markdown —
- * conversion happens at the edges (see editor/markdown.ts).
+ * The note view: a real ProseKit editor with a formatting toolbar and inline
+ * prose editing. The editing experience is rich, but the file on disk stays
+ * plain markdown — conversion happens at the edges (see editor/markdown.ts).
  */
-export function NoteView({
-  dirLabel,
-  fileName,
-  markdown,
-  onSave,
-  railVisible = true,
-  focusMode = false,
-  measure = "62ch",
-}: NoteViewProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
+export function Editor({ file, onSave }: EditorProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
   const pmRef = useRef<NoteEditor | null>(null);
   const [active, setActive] = useState<ActiveMarks>({
     bold: false,
@@ -44,8 +30,9 @@ export function NoteView({
   const [savedLabel, setSavedLabel] = useState("saved");
 
   useEffect(() => {
-    if (!editorRef.current) return;
-    const pm = mount(editorRef.current, markdown, {
+    if (!mountRef.current) return;
+    setSavedLabel("saved");
+    const pm = mount(mountRef.current, file.body, {
       onState: (s) => {
         setActive(s.active);
         setWords(s.words);
@@ -56,7 +43,8 @@ export function NoteView({
       pm.destroy();
       pmRef.current = null;
     };
-  }, [markdown]);
+    // body is fixed per path in the sample data; re-mount tracks the open file
+  }, [file.path, file.body]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,11 +63,8 @@ export function NoteView({
   }, [onSave]);
 
   return (
-    <div className={`note-view${focusMode ? " note-view--focus" : ""}`}>
-      <div className="note-view__toolbar">
-        <span className="note-view__crumb-dir">{dirLabel}</span>
-        <span className="note-view__crumb-file">{fileName}</span>
-        <div className="note-view__divider" />
+    <div className="editor">
+      <div className="editor__toolbar">
         <IconButton
           icon={Bold}
           aria-label="Bold"
@@ -113,34 +98,21 @@ export function NoteView({
           size="sm"
           onClick={() => pmRef.current?.toggleLink()}
         />
-        <div className="note-view__toolbar-right">
-          <span className="note-view__words">{words} words</span>
+        <div className="editor__toolbar-right">
+          <span className="editor__words">{words} words</span>
           <Kbd>⌘</Kbd>
           <Kbd>S</Kbd>
         </div>
       </div>
 
-      <div className="note-view__scroll">
-        <div className="note-view__page">
-          {railVisible && (
-            <aside className="note-view__rail">
-              <span className="note-view__rail-mark">[…]</span>
-              A real ProseKit editor. Type here — bold, lists, headings — and it round-trips to
-              plain markdown. ⌘S serializes the file.
-            </aside>
-          )}
-          <div
-            ref={editorRef}
-            className="note-view__editor obiter-pm"
-            style={{ maxWidth: measure }}
-          />
-        </div>
+      <div className="editor__scroll">
+        <div ref={mountRef} className="editor__mount obiter-pm" />
       </div>
 
-      <div className="note-view__footer">
-        <span className="note-view__saved">{savedLabel}</span>
+      <div className="editor__footer">
+        <span className="editor__saved">{savedLabel}</span>
         <span>{words} words</span>
-        <span className="note-view__disk">markdown · UTF-8 · LF</span>
+        <span className="editor__disk">markdown · UTF-8 · LF</span>
       </div>
     </div>
   );

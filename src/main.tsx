@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import { RouterProvider } from "@tanstack/react-router";
+import { router } from "./router";
 
 // Self-hosted fonts — a product that promises you own your data should not
 // phone a third party for a font on every launch.
@@ -16,6 +17,6 @@ import "./styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </React.StrictMode>,
 );
