@@ -7,7 +7,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { SettingsProvider, useSettings } from "./SettingsProvider";
-import type { Settings } from "./settings";
+import type { RecoveryNotice, Settings } from "./settings";
 
 function testSettings(): Settings {
   return {
@@ -26,12 +26,13 @@ function testSettings(): Settings {
 }
 
 /** Backend stand-in: serves `stored`, replaces it on update, logs commands. */
-function mockBackend(stored: Settings) {
+function mockBackend(stored: Settings, recovery: RecoveryNotice | null = null) {
   const calls: Array<{ cmd: string; args: unknown }> = [];
   let current = stored;
   mockIPC((cmd, args) => {
     calls.push({ cmd, args });
     if (cmd === "get_settings") return current;
+    if (cmd === "get_recovery_notice") return recovery;
     if (cmd === "update_settings") {
       current = (args as { settings: Settings }).settings;
       return current;
@@ -103,6 +104,59 @@ describe("SettingsProvider", () => {
     const update = calls.find((c) => c.cmd === "update_settings");
     if (!update) throw new Error("update_settings was never invoked");
     expect((update.args as { settings: Settings }).settings.appearance.theme).toBe("dark");
+  });
+
+  it("surfaces the startup recovery notice and can dismiss it", async () => {
+    mockBackend(testSettings(), {
+      backupPath: "/config/obiter/settings.json.bak",
+      error: "settings parse error: expected value at line 3",
+    });
+
+    function RecoveryProbe() {
+      const { recovery, dismissRecovery } = useSettings();
+      if (!recovery) return <span data-testid="recovery">none</span>;
+      return (
+        <div>
+          <span data-testid="recovery">{recovery.backupPath}</span>
+          <button type="button" onClick={dismissRecovery}>
+            dismiss
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <SettingsProvider>
+        <RecoveryProbe />
+      </SettingsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("recovery").textContent).toBe("/config/obiter/settings.json.bak");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "dismiss" }));
+    expect(screen.getByTestId("recovery").textContent).toBe("none");
+  });
+
+  it("reports no recovery notice on a clean startup", async () => {
+    mockBackend(testSettings());
+
+    function RecoveryProbe() {
+      const { settings, recovery } = useSettings();
+      if (!settings) return <span data-testid="recovery">loading</span>;
+      return <span data-testid="recovery">{recovery ? "notice" : "none"}</span>;
+    }
+
+    render(
+      <SettingsProvider>
+        <RecoveryProbe />
+      </SettingsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("recovery").textContent).toBe("none");
+    });
   });
 
   it("useSettings outside a provider throws", () => {
