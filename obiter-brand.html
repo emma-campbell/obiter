@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obiter — brand guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..700;1,300..700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #FAF9F7;
+  --chalk: #EFEEEA;
+  --ash:   #D6D4CD;
+  --slate: #9A9891;
+  --graphite: #55534E;
+  --ink:   #1C1B18;
+
+  --pencil-50:  #EAF6FB;
+  --pencil-200: #9EDCF0;
+  --pencil-500: #0E8FBC;
+  --pencil-600: #0A6E93;
+
+  --sans: "Public Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --u: 8px;
+  --rail: 190px;
+  --measure: 620px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
+  font-feature-settings: "ss01";
+}
+
+.wrap {
+  max-width: calc(var(--rail) + var(--measure) + 96px);
+  margin: 0 auto;
+  padding: calc(var(--u) * 8) calc(var(--u) * 4) calc(var(--u) * 16);
+}
+
+/* ---- the margin rail: the signature device ---- */
+.row {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  gap: calc(var(--u) * 5);
+  align-items: start;
+}
+.rail {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--pencil-600);
+  text-align: right;
+  padding-top: 5px;
+  hyphens: none;
+}
+.rail b { font-weight: 500; color: var(--pencil-600); }
+.rail .tick {
+  display: block;
+  color: var(--pencil-500);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.body { min-width: 0; }
+
+/* ---- type scale ---- */
+h1, h2, h3 { font-weight: 500; letter-spacing: -0.015em; margin: 0; }
+h1 { font-family: var(--mono); font-size: 34px; font-weight: 500; letter-spacing: -0.02em; }
+h2 { font-size: 26px; margin-bottom: calc(var(--u) * 1.5); }
+h3 { font-size: 17px; margin: calc(var(--u) * 4) 0 var(--u); }
+p  { margin: 0 0 var(--u); max-width: 62ch; }
+p + p { margin-top: calc(var(--u) * 1.5); }
+a  { color: var(--pencil-600); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+.lede { font-size: 18px; color: var(--graphite); max-width: 58ch; }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--slate);
+  letter-spacing: 0.08em;
+  margin: 0 0 calc(var(--u) * 0.5);
+}
+.mono { font-family: var(--mono); }
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--chalk);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+section { margin-top: calc(var(--u) * 11); }
+hr { border: 0; border-top: 1px solid var(--ash); margin: calc(var(--u) * 11) 0 0; }
+
+/* ---- masthead ---- */
+.masthead { display: flex; align-items: center; gap: calc(var(--u) * 2.5); margin-bottom: calc(var(--u) * 2); }
+
+/* ---- swatches ---- */
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 2px; margin: calc(var(--u) * 2) 0 var(--u); }
+.sw { padding: calc(var(--u) * 7) var(--u) var(--u); font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+.sw span { display: block; }
+.sw .nm { font-weight: 500; }
+
+/* ---- specimen ---- */
+.spec { border-left: 2px solid var(--ash); padding-left: calc(var(--u) * 2); margin: calc(var(--u) * 2) 0; }
+.spec .lbl { font-family: var(--mono); font-size: 11px; color: var(--slate); margin-bottom: 2px; }
+
+/* ---- do / don't ---- */
+.dd { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--ash); border: 1px solid var(--ash); margin: calc(var(--u) * 2) 0; }
+.dd > div { background: var(--paper); padding: calc(var(--u) * 1.5) calc(var(--u) * 2); font-size: 14.5px; }
+.dd .hd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--slate); background: var(--chalk); }
+.dd .yes { color: var(--ink); }
+.dd .no  { color: var(--slate); text-decoration: line-through; text-decoration-color: var(--ash); }
+
+/* ---- misuse grid ---- */
+.misuse { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: calc(var(--u) * 2); margin: calc(var(--u) * 2) 0; }
+.misuse figure { margin: 0; }
+.misuse .cell { background: var(--chalk); aspect-ratio: 1; display: grid; place-items: center; position: relative; overflow: hidden; }
+.misuse figcaption { font-family: var(--mono); font-size: 11px; color: var(--slate); margin-top: 6px; line-height: 1.4; }
+.strike { position: absolute; inset: 0; }
+.strike line { stroke: var(--pencil-500); stroke-width: 1.5; }
+
+/* ---- token block ---- */
+pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.75;
+  background: var(--ink);
+  color: var(--chalk);
+  padding: calc(var(--u) * 3);
+  overflow-x: auto;
+  margin: calc(var(--u) * 2) 0;
+  border-radius: 3px;
+}
+pre .c { color: var(--slate); }
+pre .v { color: var(--pencil-200); }
+
+ul { padding-left: 1.1em; margin: var(--u) 0; max-width: 62ch; }
+li { margin-bottom: 6px; }
+li::marker { color: var(--slate); }
+
+:focus-visible { outline: 2px solid var(--pencil-500); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .row { grid-template-columns: 1fr; gap: calc(var(--u) * 1.5); }
+  .rail {
+    text-align: left;
+    border-left: 2px solid var(--pencil-200);
+    padding: 2px 0 2px calc(var(--u) * 1.5);
+    order: 2;
+    margin-bottom: calc(var(--u) * 2);
+  }
+  .body { order: 1; }
+  .dd { grid-template-columns: 1fr; }
+  h1 { font-size: 27px; }
+  h2 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  a { transition: color 120ms ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>Everything here is a decision, not a preference. Where a rule is still open, it says so.</div>
+  <div class="body">
+    <div class="masthead">
+      <svg width="44" height="44" viewBox="0 0 32 32" role="img" aria-label="Obiter mark">
+        <path d="M 10 5 L 4 5 L 4 27 L 10 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+        <path d="M 22 5 L 28 5 L 28 27 L 22 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+        <rect x="8.5" y="14.5" width="3" height="3" fill="#1C1B18"/>
+        <rect x="14.5" y="14.5" width="3" height="3" fill="#1C1B18"/>
+        <rect x="20.5" y="14.5" width="3" height="3" fill="#1C1B18"/>
+      </svg>
+      <h1>obiter</h1>
+    </div>
+    <p class="lede">Brand guide, v0.1. A markdown notes app for people who want their notes to stay their own — plain files, in a folder they picked, readable in fifty years without us.</p>
+  </div>
+</div>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span><b>Obiter dicta</b> — "things said by the way." A judge's remarks that aren't binding, and are often the most interesting part of the ruling.</div>
+  <div class="body">
+    <p class="eyebrow">01 / premise</p>
+    <h2>What we're actually selling</h2>
+    <p>Not features. Not a second brain. The promise is <em>subtraction</em>: no database, no proprietary format, no account, no sync you didn't ask for. Your notes are markdown files on your disk. Obiter is a good way to write them, and the least consequential thing in the stack — if we vanish tomorrow, you lose an editor, not your work.</p>
+    <p>Everything downstream — the mark, the type, the accent, the copy — is trying to say <em>this thing is honest and it will not surprise you</em>. That's the whole brief. If a design decision doesn't support it, it's decoration.</p>
+    <h3>Three tests</h3>
+    <ul>
+      <li><b>The folder test.</b> Could a person open their notes with <code>cat</code>? If a feature breaks that, it doesn't ship.</li>
+      <li><b>The fifty-year test.</b> Will this file open in 2076? Plain text says yes.</li>
+      <li><b>The aside test.</b> Is this the interesting thing said in passing, or is it filler? Applies to copy, features, and this document.</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>The mark is <code>[…]</code> — the editorial mark for text elided from a quotation. Brackets hold something; the dots are what was said in passing.</div>
+  <div class="body">
+    <p class="eyebrow">02 / the mark</p>
+    <h2>Logo</h2>
+    <p>Drawn on a 32-unit grid. One module governs everything: the stroke is <b>3</b>, the dots are <b>3×3</b>, and every gap — bracket to dot, dot to dot, dot to bracket — is <b>3</b>. Nothing in the mark is eyeballed. Corners are mitered, caps are butt. No rounding, anywhere, ever.</p>
+    <p>The bracket arms run to x=10 and x=22, terminating exactly over the centres of the outer dots. That alignment is what makes them read as brackets containing something rather than as stray ticks. Hold it at every size.</p>
+
+    <h3>Clearspace and minimum size</h3>
+    <p>Clearspace is <b>6 units</b> (two modules) from the ink edge on all sides. Nothing enters it — not the wordmark, not a container edge, not a nav item.</p>
+    <p>Minimum size for the master drawing is <b>32px</b>. Below that it does not scale; it gets redrawn. The 16px cut is a separate file: 2px stroke, 2px dots, snapped to whole pixels, <b>one dot instead of three</b> — three dots plus four gaps cannot fit in 16px without going sub-pixel, and a smudge is worse than an honest simplification.</p>
+
+    <h3>Misuse</h3>
+    <div class="misuse">
+      <figure>
+        <div class="cell">
+          <svg width="60" height="60" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M 10 5 L 4 5 L 4 27 L 10 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 22 5 L 28 5 L 28 27 L 22 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="10" cy="16" r="1.5" fill="#1C1B18"/><circle cx="16" cy="16" r="1.5" fill="#1C1B18"/><circle cx="22" cy="16" r="1.5" fill="#1C1B18"/>
+          </svg>
+          <svg class="strike" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="100" x2="100" y2="0"/></svg>
+        </div>
+        <figcaption>No rounding. The corners are the position.</figcaption>
+      </figure>
+      <figure>
+        <div class="cell">
+          <svg width="60" height="60" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M 10 5 L 4 5 L 4 27 L 10 27" fill="none" stroke="#0E8FBC" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <path d="M 22 5 L 28 5 L 28 27 L 22 27" fill="none" stroke="#0E8FBC" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <rect x="8.5" y="14.5" width="3" height="3" fill="#0E8FBC"/><rect x="14.5" y="14.5" width="3" height="3" fill="#0E8FBC"/><rect x="20.5" y="14.5" width="3" height="3" fill="#0E8FBC"/>
+          </svg>
+          <svg class="strike" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="100" x2="100" y2="0"/></svg>
+        </div>
+        <figcaption>Mark is never Pencil. Ink, Paper, or knockout only.</figcaption>
+      </figure>
+      <figure>
+        <div class="cell">
+          <svg width="60" height="60" viewBox="0 0 32 32" aria-hidden="true">
+            <g transform="translate(16,16) scale(1,0.66) translate(-16,-16)">
+            <path d="M 10 5 L 4 5 L 4 27 L 10 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <path d="M 22 5 L 28 5 L 28 27 L 22 27" fill="none" stroke="#1C1B18" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <rect x="8.5" y="14.5" width="3" height="3" fill="#1C1B18"/><rect x="14.5" y="14.5" width="3" height="3" fill="#1C1B18"/><rect x="20.5" y="14.5" width="3" height="3" fill="#1C1B18"/>
+            </g>
+          </svg>
+          <svg class="strike" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="100" x2="100" y2="0"/></svg>
+        </div>
+        <figcaption>Never stretch. The module dies first.</figcaption>
+      </figure>
+      <figure>
+        <div class="cell">
+          <svg width="60" height="60" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M 10 5 L 4 5 L 4 27 L 10 27" fill="none" stroke="#9A9891" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <path d="M 22 5 L 28 5 L 28 27 L 22 27" fill="none" stroke="#9A9891" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
+            <rect x="9.5" y="15.5" width="1" height="1" fill="#9A9891"/><rect x="15.5" y="15.5" width="1" height="1" fill="#9A9891"/><rect x="21.5" y="15.5" width="1" height="1" fill="#9A9891"/>
+          </svg>
+          <svg class="strike" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="100" x2="100" y2="0"/></svg>
+        </div>
+        <figcaption>Never re-weight. Stroke is 3 units at any scale.</figcaption>
+      </figure>
+    </div>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>Non-photo blue was the pencil that the reproduction camera couldn't see — you marked up the artwork and the marks never reached the printed page. <b>Obiter dicta</b> are the remarks that never reach the holding.</div>
+  <div class="body">
+    <p class="eyebrow">03 / color</p>
+    <h2>Neutrals, and the blue pencil</h2>
+    <p>Six warm-leaning neutrals and one accent. The neutrals are warm by about four percent — enough that the interface doesn't feel clinical, far enough from cream that it doesn't read as a stationery brand.</p>
+
+    <div class="swatches">
+      <div class="sw" style="background:#FAF9F7; color:#55534E; box-shadow: inset 0 0 0 1px #D6D4CD;"><span class="nm">Paper</span><span>#FAF9F7</span></div>
+      <div class="sw" style="background:#EFEEEA; color:#55534E;"><span class="nm">Chalk</span><span>#EFEEEA</span></div>
+      <div class="sw" style="background:#D6D4CD; color:#1C1B18;"><span class="nm">Ash</span><span>#D6D4CD</span></div>
+      <div class="sw" style="background:#9A9891; color:#1C1B18;"><span class="nm">Slate</span><span>#9A9891</span></div>
+      <div class="sw" style="background:#55534E; color:#EFEEEA;"><span class="nm">Graphite</span><span>#55534E</span></div>
+      <div class="sw" style="background:#1C1B18; color:#EFEEEA;"><span class="nm">Ink</span><span>#1C1B18</span></div>
+    </div>
+    <div class="swatches">
+      <div class="sw" style="background:#EAF6FB; color:#0A6E93;"><span class="nm">Pencil 50</span><span>#EAF6FB</span></div>
+      <div class="sw" style="background:#9EDCF0; color:#0A6E93;"><span class="nm">Pencil 200</span><span>#9EDCF0</span></div>
+      <div class="sw" style="background:#0E8FBC; color:#FFFFFF;"><span class="nm">Pencil 500</span><span>#0E8FBC</span></div>
+      <div class="sw" style="background:#0A6E93; color:#FFFFFF;"><span class="nm">Pencil 600</span><span>#0A6E93</span></div>
+    </div>
+
+    <h3>Rules</h3>
+    <ul>
+      <li><b>Pencil marks, it doesn't decorate.</b> It appears where the user has acted or where the app is pointing: cursor, selection, focus ring, active item, link. Never a background, never a hero, never a gradient.</li>
+      <li><b>One Pencil per view.</b> If two things are blue, neither is the answer.</li>
+      <li><b>Pencil 500 on Paper fails small text.</b> Use Pencil 600 for any text under 18px. 500 is for fills and 1px+ strokes.</li>
+      <li><b>The mark is never Pencil.</b> Ink on light, Paper on dark. The logo is not an accent.</li>
+      <li><b>Danger is unclaimed.</b> Because the accent is blue, red is still free and unambiguous. Don't spend it on anything but destruction.</li>
+    </ul>
+    <p><b>Still open:</b> dark mode. The neutrals invert cleanly, but Pencil 500 on Ink is uncomfortably hot — it likely needs to shift to 200 as the accent and 500 as the fill. Needs a pass before v1.</p>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>Both faces are open-licensed and self-hosted. A product that promises you own your data should not phone a third party for a font on every page load.</div>
+  <div class="body">
+    <p class="eyebrow">04 / typography</p>
+    <h2>The interface speaks. The content is plain.</h2>
+    <p>One rule, and it's conceptual rather than aesthetic: <b>sans is the app talking, mono is your text and the machine's.</b> Buttons, labels, settings, prose on the site — Public Sans. Notes, file paths, code, keys, data, the wordmark — IBM Plex Mono.</p>
+    <p>The wordmark sits on the mono side on purpose. The name should look like something you typed into a note, because that's what the product is. It's also why the display face here <em>is</em> the utility face — there's no third typeface pretending to be the brand's voice.</p>
+
+    <div class="spec">
+      <div class="lbl">Public Sans — interface, 300 / 400 / 500</div>
+      <div style="font-size:26px; font-weight:500; letter-spacing:-0.015em;">Notes live in a folder you chose</div>
+      <div style="font-size:15px; color:#55534E;">Regular for body. Medium for labels and buttons. Light above 28px only. Never 600 or 700 — weight is not emphasis here, hierarchy is.</div>
+    </div>
+    <div class="spec">
+      <div class="lbl">IBM Plex Mono — content, wordmark, data, 400 / 500</div>
+      <div class="mono" style="font-size:22px;">~/Notes/2026-07-16.md</div>
+      <div class="mono" style="font-size:13px; color:#55534E;">Tabular by nature. Use it wherever the character grid means something.</div>
+    </div>
+
+    <h3>Scale</h3>
+    <ul>
+      <li><code>display</code> 34 / 1.15 / mono 500 — wordmark and page titles only</li>
+      <li><code>title</code> 26 / 1.25 / sans 500</li>
+      <li><code>heading</code> 17 / 1.4 / sans 500</li>
+      <li><code>body</code> 16 / 1.65 / sans 400</li>
+      <li><code>small</code> 14 / 1.5 / sans 400 — secondary, never primary content</li>
+      <li><code>micro</code> 11.5 / 1.4 / mono 400 — labels, eyebrows, metadata</li>
+    </ul>
+    <p>Sentence case everywhere. No title case, no all-caps — caps read as shouting and the brand doesn't shout. Measure caps at <b>62ch</b>; a notes app that can't set a comfortable line length has no credibility.</p>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>The name is permission to keep the aside — but an aside has to be the interesting part, not padding. Cut it if it isn't.</div>
+  <div class="body">
+    <p class="eyebrow">05 / voice</p>
+    <h2>Plain, specific, unhurried</h2>
+    <p>Write like you're telling one competent person what the thing does. No urgency, no hype, no confiding. The register is a good README, not a landing page.</p>
+
+    <h3>Principles</h3>
+    <ul>
+      <li><b>Show the folder, don't promise privacy.</b> Anyone can claim to respect your data. Say <em>your notes are .md files in <code>~/Notes</code></em> and the claim becomes unnecessary.</li>
+      <li><b>Specific beats plain. Plain beats clever.</b> In that order, always.</li>
+      <li><b>The app has no feelings.</b> No "Oops!", no "We're sorry", no exclamation marks in system copy. Errors say what happened and what to do.</li>
+      <li><b>Nothing is running out.</b> No countdowns, no limited-time, no streaks, no badges. A tool that manufactures urgency about your own notes is a tool that has stopped being yours.</li>
+      <li><b>Never sell ownership as a feature.</b> It's the premise. Features are things you can turn off.</li>
+    </ul>
+
+    <h3>Words we don't use</h3>
+    <p><span class="mono" style="color:#9A9891;">second brain · seamless · effortless · unlock · supercharge · reimagine · PKM · knowledge graph · simply · just · powerful · revolutionary</span></p>
+
+    <div class="dd">
+      <div class="hd">Write</div><div class="hd">Not</div>
+      <div class="yes">Your notes are markdown files in a folder you picked.</div>
+      <div class="no">Powerful, seamless knowledge management for your second brain.</div>
+      <div class="yes">Obiter can't reach that folder. Check permissions in Settings.</div>
+      <div class="no">Oops! Something went wrong.</div>
+      <div class="yes">Open folder</div>
+      <div class="no">Liberate your data</div>
+      <div class="yes">Nothing here yet. Start a note.</div>
+      <div class="no">Your knowledge base is empty — let's fix that!</div>
+      <div class="yes">Works offline. There's nothing to be offline from.</div>
+      <div class="no">Cloud-optional architecture with local-first sync.</div>
+    </div>
+    <p><b>Still open:</b> whether Obiter is ever "we". Current position — the app is "Obiter", the docs are "you", and there's no first person anywhere. Revisit if we ever write a changelog with a human on it.</p>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<section>
+<div class="row">
+  <div class="rail"><span class="tick">[…]</span>Spacing is 8px-based, not 3. The mark's module governs the mark. Forcing it onto the UI grid would be a costume.</div>
+  <div class="body">
+    <p class="eyebrow">06 / tokens</p>
+    <h2>The system</h2>
+    <p>Paste these in. Radius is deliberately near-zero — the mark is mitered and the interface should agree. 3px is the ceiling, and it exists only so inputs don't look broken.</p>
+
+<pre><span class="c">/* obiter — design tokens */</span>
+:root {
+  <span class="c">/* neutrals */</span>
+  --paper:      <span class="v">#FAF9F7</span>;  <span class="c">/* app background */</span>
+  --chalk:      <span class="v">#EFEEEA</span>;  <span class="c">/* raised surface, code bg */</span>
+  --ash:        <span class="v">#D6D4CD</span>;  <span class="c">/* borders, rules */</span>
+  --slate:      <span class="v">#9A9891</span>;  <span class="c">/* metadata, placeholder */</span>
+  --graphite:   <span class="v">#55534E</span>;  <span class="c">/* secondary text */</span>
+  --ink:        <span class="v">#1C1B18</span>;  <span class="c">/* primary text, the mark */</span>
+
+  <span class="c">/* accent — marks, never decorates */</span>
+  --pencil-50:  <span class="v">#EAF6FB</span>;
+  --pencil-200: <span class="v">#9EDCF0</span>;
+  --pencil-500: <span class="v">#0E8FBC</span>;  <span class="c">/* fills, focus ring, cursor */</span>
+  --pencil-600: <span class="v">#0A6E93</span>;  <span class="c">/* text under 18px */</span>
+
+  <span class="c">/* danger — destruction only */</span>
+  --danger:     <span class="v">#B3261E</span>;
+
+  <span class="c">/* type */</span>
+  --sans: <span class="v">"Public Sans"</span>, system-ui, sans-serif;
+  --mono: <span class="v">"IBM Plex Mono"</span>, ui-monospace, monospace;
+
+  <span class="c">/* space — 8px base */</span>
+  --u-1: <span class="v">4px</span>;   --u-2: <span class="v">8px</span>;   --u-3: <span class="v">12px</span>;
+  --u-4: <span class="v">16px</span>;  --u-6: <span class="v">24px</span>;  --u-8: <span class="v">32px</span>;
+  --u-12: <span class="v">48px</span>; --u-16: <span class="v">64px</span>;
+
+  <span class="c">/* form */</span>
+  --radius:   <span class="v">2px</span>;
+  --radius-lg:<span class="v">3px</span>;
+  --border:   <span class="v">1px solid var(--ash)</span>;
+  --focus:    <span class="v">0 0 0 2px var(--pencil-500)</span>;
+  --measure:  <span class="v">62ch</span>;
+  --control:  <span class="v">32px</span>;
+}</pre>
+
+    <h3>Applying them</h3>
+    <ul>
+      <li><b>Borders over shadows.</b> One hairline in Ash. No elevation, no depth — the app is a text file, not a stack of cards.</li>
+      <li><b>Focus is always visible.</b> 2px Pencil, 2px offset, on everything. A keyboard-first tool that hides focus is lying about being keyboard-first.</li>
+      <li><b>Controls are 32px.</b> Dense, but this is a writing tool for people who'd rather see another line of text.</li>
+      <li><b>No gradients, no blur, no glass.</b> Not a style preference — those are all ways of implying depth the product doesn't have.</li>
+    </ul>
+    <p><b>Still open:</b> the type ramp assumes a desktop window. Tauri gives us mobile eventually; the 32px control and 11.5px micro won't survive a touch target audit. Fork the scale when we get there rather than compromising the desktop one now.</p>
+  </div>
+</div>
+</section>
+
+</div>
+</body>
+</html>
