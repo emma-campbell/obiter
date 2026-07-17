@@ -14,6 +14,7 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { Folder, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
+import { searchNotes } from "./notebook/client";
 import { useChooseFolder } from "./notebook/useChooseFolder";
 import { NotebookGate, useNotebookStatus } from "./app/NotebookGate";
 import { RecoveryToast } from "./app/RecoveryToast";
@@ -123,7 +124,15 @@ function RootLayout() {
           <Outlet />
         </div>
         <RecoveryToast onViewSettings={() => setSettings(true)} />
-        {cmd && <CommandPalette open items={paletteItems} onClose={() => setCmd(false)} />}
+        {cmd && (
+          <CommandPalette
+            open
+            items={paletteItems}
+            searchNotes={searchNotes}
+            onOpenNote={(p) => openRelative(p)}
+            onClose={() => setCmd(false)}
+          />
+        )}
         {settings && (
           <Settings
             onClose={() => setSettings(false)}

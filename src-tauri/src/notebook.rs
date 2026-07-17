@@ -127,6 +127,57 @@ impl Notebook {
         Ok(entries)
     }
 
+    /// Find notes whose filename matches `query` (case-insensitive
+    /// subsequence), walking the whole notebook. Same visibility filtering
+    /// as `list_dir`; symlinks are not followed, so the walk can't escape
+    /// the root. Results are bounded — this is a live walk, and a real index
+    /// (SQLite/FTS5) will replace the implementation behind this method.
+    pub fn search(&self, query: &str) -> Result<Vec<Entry>, NotebookError> {
+        let root = self.canon_root()?;
+        let needle = query.to_ascii_lowercase();
+        let mut hits = Vec::new();
+        self.walk(&root, "", &needle, &mut hits);
+        hits.sort_by(|a, b| a.path.to_ascii_lowercase().cmp(&b.path.to_ascii_lowercase()));
+        hits.truncate(MAX_SEARCH_RESULTS);
+        Ok(hits)
+    }
+
+    fn walk(&self, dir: &Path, rel: &str, needle: &str, out: &mut Vec<Entry>) {
+        let Ok(read) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for dirent in read.flatten() {
+            let Ok(file_type) = dirent.file_type() else {
+                continue;
+            };
+            // Never follow a symlink — a symlinked directory could point
+            // outside the notebook, and the confinement must hold here too.
+            if file_type.is_symlink() {
+                continue;
+            }
+            let name = dirent.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') && !self.show_hidden {
+                continue;
+            }
+            let child_rel = if rel.is_empty() {
+                name.clone()
+            } else {
+                format!("{rel}/{name}")
+            };
+            if file_type.is_dir() {
+                self.walk(&dirent.path(), &child_rel, needle, out);
+            } else if self.extension_shown(&name)
+                && is_subsequence(needle, &name.to_ascii_lowercase())
+            {
+                out.push(Entry {
+                    name,
+                    path: child_rel,
+                    kind: EntryKind::File,
+                });
+            }
+        }
+    }
+
     /// Read a note's contents. Root-confined like `list_dir`, and — because
     /// resolution is independent of the tree — it resolves a note whose
     /// parent folder was never expanded, so search/jump can open anything.
@@ -175,6 +226,17 @@ impl Notebook {
             None => false,
         }
     }
+}
+
+/// Cap on search results — a live walk, so bound the output. Indexing later
+/// makes both the walk and this cap moot.
+const MAX_SEARCH_RESULTS: usize = 50;
+
+/// Whether `needle`'s chars appear in `haystack` in order (not necessarily
+/// contiguous). Both are expected pre-lowercased.
+fn is_subsequence(needle: &str, haystack: &str) -> bool {
+    let mut chars = haystack.chars();
+    needle.chars().all(|c| chars.any(|h| h == c))
 }
 
 fn rel_is_root(rel: &str) -> bool {
@@ -350,6 +412,81 @@ mod tests {
 
         let err = notebook(&root).read_note("../secret.md").unwrap_err();
         assert!(matches!(err, NotebookError::OutsideRoot));
+    }
+
+    #[test]
+    fn search_matches_filenames_by_subsequence_across_subfolders() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::create_dir(root.join("recipes")).unwrap();
+        fs::write(root.join("recipes/dumplings.md"), "").unwrap();
+        fs::write(root.join("reading.md"), "").unwrap();
+        fs::write(root.join("notes.md"), "").unwrap();
+
+        // "dmp" is a subsequence of "dumplings", not a substring.
+        let hits = notebook(root).search("dmp").unwrap();
+        assert_eq!(names(&hits), ["dumplings.md"]);
+        assert_eq!(hits[0].path, "recipes/dumplings.md");
+    }
+
+    #[test]
+    fn search_is_case_insensitive() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::write(root.join("Reading.md"), "").unwrap();
+
+        assert_eq!(names(&notebook(root).search("READING").unwrap()), ["Reading.md"]);
+    }
+
+    #[test]
+    fn search_honors_visibility_rules() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::write(root.join("todo.md"), "").unwrap();
+        fs::write(root.join("todo.txt"), "").unwrap(); // wrong extension
+        fs::write(root.join(".todo.md"), "").unwrap(); // hidden
+        fs::create_dir(root.join(".git")).unwrap();
+        fs::write(root.join(".git/todo.md"), "").unwrap(); // in a hidden dir
+
+        let hits = notebook(root).search("todo").unwrap();
+        assert_eq!(names(&hits), ["todo.md"]);
+    }
+
+    #[test]
+    fn search_does_not_follow_symlinked_dirs_out_of_the_notebook() {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            let dir = tempfile::tempdir().unwrap();
+            let root = dir.path().join("notes");
+            fs::create_dir(&root).unwrap();
+            fs::write(root.join("inside.md"), "").unwrap();
+            let outside = dir.path().join("outside");
+            fs::create_dir(&outside).unwrap();
+            fs::write(outside.join("secret.md"), "").unwrap();
+            symlink(&outside, root.join("link")).unwrap();
+
+            // The outside note is never surfaced through the symlink.
+            let hits = notebook(&root).search("md").unwrap_or_default();
+            let paths: Vec<&str> = hits.iter().map(|e| e.path.as_str()).collect();
+            assert_eq!(paths, ["inside.md"]);
+        }
+    }
+
+    #[test]
+    fn search_bounds_its_results() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        for i in 0..80 {
+            fs::write(root.join(format!("note-{i:03}.md")), "").unwrap();
+        }
+        assert_eq!(notebook(root).search("note").unwrap().len(), MAX_SEARCH_RESULTS);
+    }
+
+    #[test]
+    fn search_on_an_empty_notebook_finds_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(notebook(dir.path()).search("anything").unwrap(), []);
     }
 
     #[test]
