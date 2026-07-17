@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-router";
 import { Folder, FileText, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
 import { EmptyState } from "./app/EmptyState";
+import { RecoveryToast } from "./app/RecoveryToast";
 import { Settings } from "./app/Settings";
 import { Sidebar } from "./app/Sidebar";
 import { Titlebar } from "./app/Titlebar";
@@ -132,6 +133,7 @@ function RootLayout() {
         )}
         <Outlet />
       </div>
+      <RecoveryToast onViewSettings={() => setSettings(true)} />
       {cmd && <CommandPalette open items={paletteItems} onClose={() => setCmd(false)} />}
       {settings && (
         <Settings

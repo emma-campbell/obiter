@@ -7,7 +7,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
-import { X } from "lucide-react";
+import { RotateCw, X } from "lucide-react";
 import { Button } from "../components/core/Button";
 import { Icon } from "../components/core/Icon";
 import { Input } from "../components/core/Input";
@@ -166,7 +166,7 @@ export interface SettingsProps {
 }
 
 export function Settings({ onClose, onDisconnect }: SettingsProps) {
-  const { settings, update } = useSettings();
+  const { settings, update, reload, reloadError, clearReloadError } = useSettings();
   const [tab, setTab] = useState<Tab>("vault");
   // "Other…" chosen in the model dropdown; a stored model outside the
   // curated list also renders as custom.
@@ -240,9 +240,19 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => void reload()}
+            aria-label="Reload settings from file"
+            title="Reload settings from file"
+            style={{ marginLeft: "auto", padding: "0 8px" }}
+          >
+            <Icon icon={RotateCw} size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             aria-label="Close settings"
-            style={{ marginLeft: "auto", padding: "0 8px" }}
+            style={{ padding: "0 8px" }}
           >
             <Icon icon={X} size={16} />
           </Button>
@@ -284,6 +294,38 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
             );
           })}
         </div>
+
+        {reloadError && (
+          <div
+            role="alert"
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              margin: "12px 22px 0",
+              padding: "8px 8px 8px 12px",
+              border: "1px solid var(--danger)",
+              borderRadius: "var(--radius)",
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: "var(--danger)",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              Reload failed — your current settings are still in effect.{" "}
+              <span style={{ fontFamily: "var(--font-mono)" }}>{reloadError}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Dismiss reload error"
+              onClick={clearReloadError}
+              style={{ flex: "0 0 auto", padding: "0 6px", color: "var(--danger)" }}
+            >
+              <Icon icon={X} size={14} />
+            </Button>
+          </div>
+        )}
 
         <div style={{ padding: "6px 22px 20px", overflow: "auto" }}>
           {tab === "vault" && (

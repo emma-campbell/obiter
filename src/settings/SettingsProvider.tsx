@@ -18,6 +18,8 @@ export interface SettingsContextValue {
   reload: () => Promise<void>;
   /** Parse error from the last reload attempt; null once one succeeds. */
   reloadError: string | null;
+  /** Clears the reload error (UI acknowledged it). */
+  clearReloadError: () => void;
   /** Set when the backend reset a corrupt settings file at startup. */
   recovery: RecoveryNotice | null;
   /** Clears the recovery notice for this session (UI acknowledged it). */
@@ -66,10 +68,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const dismissRecovery = useCallback(() => setRecovery(null), []);
+  const clearReloadError = useCallback(() => setReloadError(null), []);
 
   return (
     <SettingsContext.Provider
-      value={{ settings, update, reload, reloadError, recovery, dismissRecovery }}
+      value={{ settings, update, reload, reloadError, clearReloadError, recovery, dismissRecovery }}
     >
       {children}
     </SettingsContext.Provider>
