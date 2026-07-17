@@ -30,6 +30,8 @@ function testSettings(): SettingsDoc {
 interface BackendOptions {
   confirmAnswer?: boolean;
   pickedFolder?: string | null;
+  /** What `reload_settings` yields; throw to simulate a parse failure. */
+  onReload?: () => SettingsDoc;
 }
 
 /**
@@ -39,7 +41,7 @@ interface BackendOptions {
  */
 function mockBackend(
   stored: SettingsDoc,
-  { confirmAnswer = true, pickedFolder }: BackendOptions = {},
+  { confirmAnswer = true, pickedFolder, onReload }: BackendOptions = {},
 ) {
   const store = { settings: stored, keys: new Set<string>() };
   const calls: Array<{ cmd: string; args: unknown }> = [];
@@ -52,6 +54,9 @@ function mockBackend(
         return null;
       case "update_settings":
         store.settings = (args as { settings: SettingsDoc }).settings;
+        return store.settings;
+      case "reload_settings":
+        store.settings = onReload ? onReload() : store.settings;
         return store.settings;
       case "set_api_key":
         store.keys.add((args as { provider: string }).provider);
@@ -219,6 +224,48 @@ describe("Settings modal", () => {
       expect(screen.getByLabelText("API key")).toBeTruthy();
     });
     expect(store.keys.has("anthropic")).toBe(false);
+  });
+
+  it("reload picks up hand-edited values and re-renders the controls", async () => {
+    const edited = testSettings();
+    edited.vault.delete = "permanent";
+    edited.vault.dailyNote.filenameFormat = "DD-MM-YYYY";
+    mockBackend(testSettings(), { onReload: () => edited });
+    renderSettings();
+    await settled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reload settings from file" }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe(
+        "permanent",
+      );
+    });
+    expect((screen.getByLabelText("Daily note filename format") as HTMLInputElement).value).toBe(
+      "DD-MM-YYYY",
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("a failed reload shows the error inline and keeps the controls as-is", async () => {
+    mockBackend(testSettings(), {
+      onReload: () => {
+        throw "settings parse error: key must be a string at line 2";
+      },
+    });
+    renderSettings();
+    await settled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reload settings from file" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("key must be a string");
+    // Controls still show the in-memory settings.
+    expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe("trash");
+
+    // Dismissing returns the modal to normal.
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss reload error" }));
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("model dropdown offers curated ids plus a custom escape", async () => {
