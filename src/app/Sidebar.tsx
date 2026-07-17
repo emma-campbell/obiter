@@ -2,16 +2,22 @@ import { Folder, Plus } from "lucide-react";
 import { Button } from "../components/core/Button";
 import { Icon } from "../components/core/Icon";
 import { FileTree } from "../components/navigation/FileTree";
-import { NOTES_ROOT, TREE, type NoteFile } from "../notes/notes-data";
+import { listDir } from "../notebook/client";
+import { useSettings } from "../settings/SettingsProvider";
 
 export interface SidebarProps {
+  /** Notebook-relative path of the open note. */
   selected?: string;
-  onSelect: (path: string, node: NoteFile) => void;
+  onSelect: (path: string) => void;
   onNew: () => void;
 }
 
-/** Left rail: the folder header, the reusable FileTree, and New note. */
+/** Left rail: the notebook header, the lazy FileTree, and New note. */
 export function Sidebar({ selected, onSelect, onNew }: SidebarProps) {
+  const { settings } = useSettings();
+  const path = settings?.notebook.path ?? "";
+  const name = path.split("/").filter(Boolean).pop() ?? path;
+
   return (
     <div
       style={{
@@ -33,17 +39,22 @@ export function Sidebar({ selected, onSelect, onNew }: SidebarProps) {
         }}
       >
         <Icon icon={Folder} size={15} style={{ color: "var(--graphite)" }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--ink)" }}>
-          {NOTES_ROOT}
+        <span
+          title={path}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12.5,
+            color: "var(--ink)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {name}
         </span>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: "6px 6px" }}>
-        <FileTree
-          tree={TREE}
-          selected={selected}
-          onSelect={onSelect}
-          defaultExpanded={["~/Notes/obiter", "~/Notes/recipes"]}
-        />
+        <FileTree loadChildren={listDir} selected={selected} onSelect={onSelect} />
       </div>
       <div style={{ padding: 10, borderTop: "1px solid var(--chalk)" }}>
         <Button

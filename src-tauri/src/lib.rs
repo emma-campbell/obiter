@@ -1,9 +1,11 @@
+mod notebook;
 mod secrets;
 mod settings;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use notebook::{Entry, Notebook, NotebookError};
 use settings::{AiProvider, RecoveryNotice, Settings};
 use tauri::Manager;
 
@@ -52,6 +54,29 @@ fn update_settings(
     settings::save(&state.path, &settings).map_err(|e| e.to_string())?;
     *state.current.lock().unwrap() = settings.clone();
     Ok(settings)
+}
+
+// Reading the connected notebook. The command builds a Notebook from the
+// current in-memory settings each call, so a settings reload (new path,
+// changed visibility) is reflected without extra plumbing.
+
+#[tauri::command]
+fn list_dir(state: tauri::State<'_, SettingsState>, path: String) -> Result<Vec<Entry>, NotebookError> {
+    list_dir_impl(&state.current.lock().unwrap(), &path)
+}
+
+fn list_dir_impl(settings: &Settings, rel: &str) -> Result<Vec<Entry>, NotebookError> {
+    let root = settings
+        .notebook
+        .path
+        .as_ref()
+        .ok_or(NotebookError::NotConnected)?;
+    let notebook = Notebook::new(
+        root,
+        settings.notebook.files.extensions.clone(),
+        settings.notebook.files.show_hidden,
+    );
+    notebook.list_dir(rel)
 }
 
 // API keys live in the OS keychain, never in the settings JSON. The
@@ -104,7 +129,8 @@ pub fn run() {
             reload_settings,
             set_api_key,
             has_api_key,
-            delete_api_key
+            delete_api_key,
+            list_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -133,6 +159,28 @@ mod tests {
 
         assert_eq!(reloaded.appearance.theme, Theme::Dark);
         assert_eq!(current.lock().unwrap().appearance.theme, Theme::Dark);
+    }
+
+    #[test]
+    fn list_dir_maps_no_connected_notebook_to_not_connected() {
+        let settings = Settings::default(); // notebook.path is None
+        let err = list_dir_impl(&settings, "").unwrap_err();
+        assert!(matches!(err, NotebookError::NotConnected));
+    }
+
+    #[test]
+    fn list_dir_reads_the_connected_notebook_with_visibility_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::write(root.join("note.md"), "").unwrap();
+        fs::write(root.join("ignore.txt"), "").unwrap();
+
+        let mut settings = Settings::default();
+        settings.notebook.path = Some(root.to_string_lossy().into_owned());
+
+        let entries = list_dir_impl(&settings, "").unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "note.md");
     }
 
     #[test]
