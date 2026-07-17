@@ -1,107 +1,79 @@
 import { useEffect, useRef, useState } from "react";
-import { Bold, Code, Italic, Link, List } from "lucide-react";
-import { IconButton } from "../components/core/IconButton";
-import { Kbd } from "../components/core/Kbd";
-import { mount, type ActiveMarks, type NoteEditor } from "../editor/prosekit-editor";
-import type { NoteFile } from "./notes-data";
+import { mount, type NoteEditor } from "../editor/prosekit-editor";
+import { readNote } from "../notebook/client";
 import "./Editor.css";
 
 export interface EditorProps {
-  /** the open note — the editor re-mounts when `file.path` changes */
-  file: NoteFile;
-  /** called with the serialized markdown on ⌘S — write the file here */
-  onSave?: (markdown: string) => void;
+  /** Notebook-relative path of the open note; the editor reloads on change. */
+  path: string;
 }
 
 /**
- * The note view: a real ProseKit editor with a formatting toolbar and inline
- * prose editing. The editing experience is rich, but the file on disk stays
- * plain markdown — conversion happens at the edges (see editor/markdown.ts).
+ * The note view: a real ProseKit editor rendering the note's markdown. This
+ * slice is read-only — the file is displayed faithfully but editing is
+ * disabled at the ProseMirror level, and there is no save. The write slice
+ * flips `editable` and restores the formatting toolbar + ⌘S.
  */
-export function Editor({ file, onSave }: EditorProps) {
+export function Editor({ path }: EditorProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const pmRef = useRef<NoteEditor | null>(null);
-  const [active, setActive] = useState<ActiveMarks>({
-    bold: false,
-    italic: false,
-    code: false,
-  });
+  const [body, setBody] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [words, setWords] = useState(0);
-  const [savedLabel, setSavedLabel] = useState("saved");
 
+  // Load the note's contents whenever the open path changes.
   useEffect(() => {
-    if (!mountRef.current) return;
-    setSavedLabel("saved");
-    const pm = mount(mountRef.current, file.body, {
-      onState: (s) => {
-        setActive(s.active);
-        setWords(s.words);
-      },
-    });
+    let cancelled = false;
+    setBody(null);
+    setError(false);
+    readNote(path)
+      .then((md) => {
+        if (!cancelled) setBody(md);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  // Mount a read-only editor once the contents are in hand.
+  useEffect(() => {
+    if (body === null || !mountRef.current) return;
+    const pm = mount(
+      mountRef.current,
+      body,
+      { onState: (s) => setWords(s.words) },
+      { editable: false },
+    );
     pmRef.current = pm;
     return () => {
       pm.destroy();
       pmRef.current = null;
     };
-    // body is fixed per path in the sample data; re-mount tracks the open file
-  }, [file.path, file.body]);
+  }, [body]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        const pm = pmRef.current;
-        if (!pm) return;
-        const md = pm.getMarkdown();
-        const bytes = new TextEncoder().encode(md).length;
-        setSavedLabel(`saved · ${bytes} B on disk`);
-        onSave?.(md);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onSave]);
+  if (error) {
+    return (
+      <div className="editor">
+        <div className="editor__scroll">
+          <div className="editor__mount" style={{ color: "var(--slate)", padding: "40px 0" }}>
+            Couldn't open this note.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="editor">
       <div className="editor__toolbar">
-        <IconButton
-          icon={Bold}
-          aria-label="Bold"
-          size="sm"
-          active={active.bold}
-          onClick={() => pmRef.current?.toggleBold()}
-        />
-        <IconButton
-          icon={Italic}
-          aria-label="Italic"
-          size="sm"
-          active={active.italic}
-          onClick={() => pmRef.current?.toggleItalic()}
-        />
-        <IconButton
-          icon={Code}
-          aria-label="Inline code"
-          size="sm"
-          active={active.code}
-          onClick={() => pmRef.current?.toggleCode()}
-        />
-        <IconButton
-          icon={List}
-          aria-label="Bullet list"
-          size="sm"
-          onClick={() => pmRef.current?.toggleList()}
-        />
-        <IconButton
-          icon={Link}
-          aria-label="Link"
-          size="sm"
-          onClick={() => pmRef.current?.toggleLink()}
-        />
+        <span className="editor__readonly" style={{ fontSize: 13, color: "var(--slate)" }}>
+          Read-only preview — saving lands next
+        </span>
         <div className="editor__toolbar-right">
           <span className="editor__words">{words} words</span>
-          <Kbd>⌘</Kbd>
-          <Kbd>S</Kbd>
         </div>
       </div>
 
@@ -110,7 +82,7 @@ export function Editor({ file, onSave }: EditorProps) {
       </div>
 
       <div className="editor__footer">
-        <span className="editor__saved">{savedLabel}</span>
+        <span className="editor__saved">read-only</span>
         <span>{words} words</span>
         <span className="editor__disk">markdown · UTF-8 · LF</span>
       </div>

@@ -8,3 +8,8 @@ import type { Entry } from "./notebook";
 export function listDir(path: string): Promise<Entry[]> {
   return invoke<Entry[]>("list_dir", { path });
 }
+
+/** Read a note's markdown contents by notebook-relative path. */
+export function readNote(path: string): Promise<string> {
+  return invoke<string>("read_note", { path });
+}

@@ -9,11 +9,11 @@ import {
   createRoute,
   createRouter,
   Outlet,
-  redirect,
   useNavigate,
   useParams,
+  useRouterState,
 } from "@tanstack/react-router";
-import { Folder, FileText, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
+import { Folder, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
 import { EmptyState } from "./app/EmptyState";
 import { RecoveryToast } from "./app/RecoveryToast";
 import { Settings } from "./app/Settings";
@@ -21,7 +21,6 @@ import { Sidebar } from "./app/Sidebar";
 import { Titlebar } from "./app/Titlebar";
 import { CommandPalette, type PaletteItem } from "./components/navigation/CommandPalette";
 import { Editor } from "./notes/Editor";
-import { DEFAULT_NOTE, FILES, findNote, NOTES_ROOT, toRelative } from "./notes/notes-data";
 
 function RootLayout() {
   const navigate = useNavigate();
@@ -30,8 +29,12 @@ function RootLayout() {
   const [cmd, setCmd] = useState(false);
   const [settings, setSettings] = useState(false);
 
-  const opened = splat !== undefined;
-  const path = opened ? `${NOTES_ROOT}/${splat}` : "obiter";
+  // In the app whenever we're under /notes — with a note open (/notes/<path>)
+  // or not (/notes). Only the first-run picker ("/") hides the sidebar.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const inApp = pathname.startsWith("/notes");
+  const opened = splat !== undefined && splat !== "";
+  const path = opened && splat ? splat : "obiter";
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -57,9 +60,7 @@ function RootLayout() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  const openNote = (fullPath: string) =>
-    navigate({ to: "/notes/$", params: { _splat: toRelative(fullPath) } });
-  // The lazy tree already speaks notebook-relative paths.
+  // The lazy tree speaks notebook-relative paths, matching the route.
   const openRelative = (relPath: string) =>
     navigate({ to: "/notes/$", params: { _splat: relPath } });
 
@@ -95,17 +96,7 @@ function RootLayout() {
       icon: Folder,
       run: () => navigate({ to: "/" }),
     },
-    ...FILES.map(
-      (f): PaletteItem => ({
-        id: f.path,
-        label: f.path,
-        section: "Notes",
-        icon: FileText,
-        mono: true,
-        hint: f.dir,
-        run: () => openNote(f.path),
-      }),
-    ),
+    // Jump-to-note (backend search) lands in a later slice.
   ];
 
   return (
@@ -127,7 +118,7 @@ function RootLayout() {
         onSettings={() => setSettings(true)}
       />
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {opened && sidebar && (
+        {inApp && sidebar && (
           <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
         )}
         <Outlet />
@@ -154,8 +145,25 @@ function EmptyRoute() {
 
 function NoteRoute() {
   const { _splat: splat } = noteRoute.useParams();
-  const file = findNote(splat ?? "") ?? DEFAULT_NOTE;
-  return <Editor file={file} />;
+  return <Editor path={splat ?? ""} />;
+}
+
+/** "/notes" with nothing selected — the notebook is open, pick a note. */
+function NoNoteSelected() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--slate)",
+        fontSize: 14,
+      }}
+    >
+      Select a note from the sidebar.
+    </div>
+  );
 }
 
 const rootRoute = createRootRoute({ component: RootLayout });
@@ -171,13 +179,12 @@ const notesRoute = createRoute({
   path: "notes",
 });
 
-// "/notes" alone means "the folder is open" — land on the default note.
+// "/notes" alone means "the notebook is open, no note selected" — a neutral
+// pane. (Restoring the last-opened note is a deferred session-state feature.)
 const notesIndexRoute = createRoute({
   getParentRoute: () => notesRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/notes/$", params: { _splat: toRelative(DEFAULT_NOTE.path) } });
-  },
+  component: NoNoteSelected,
 });
 
 const noteRoute = createRoute({

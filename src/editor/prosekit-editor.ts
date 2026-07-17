@@ -6,9 +6,15 @@
 // markdown on save (getMarkdown).
 
 import { defineBasicExtension } from "prosekit/basic";
-import { createEditor, union } from "prosekit/core";
+import { createEditor, definePlugin, union } from "prosekit/core";
+import { Plugin } from "prosekit/pm/state";
 import { defineActiveLine } from "./active-line";
 import { htmlToMd, mdToHtml } from "./markdown";
+
+/** Disables user editing at the ProseMirror level — the canonical read-only. */
+function defineReadonly() {
+  return definePlugin(new Plugin({ props: { editable: () => false } }));
+}
 
 export interface ActiveMarks {
   bold: boolean;
@@ -51,10 +57,23 @@ const run = (fn: () => unknown): void => {
   }
 };
 
-export function mount(el: HTMLElement, md: string, handlers: NoteEditorHandlers = {}): NoteEditor {
+export interface MountOptions {
+  /** When false, the editor renders content but rejects edits. Default true. */
+  editable?: boolean;
+}
+
+export function mount(
+  el: HTMLElement,
+  md: string,
+  handlers: NoteEditorHandlers = {},
+  options: MountOptions = {},
+): NoteEditor {
   const { onState } = handlers;
+  const { editable = true } = options;
+  const extensions = [defineBasicExtension(), defineActiveLine()];
+  if (!editable) extensions.push(defineReadonly());
   const editor = createEditor({
-    extension: union(defineBasicExtension(), defineActiveLine()),
+    extension: union(...extensions),
     defaultContent: mdToHtml(md),
   });
   editor.mount(el);

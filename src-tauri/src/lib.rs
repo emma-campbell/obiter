@@ -66,17 +66,29 @@ fn list_dir(state: tauri::State<'_, SettingsState>, path: String) -> Result<Vec<
 }
 
 fn list_dir_impl(settings: &Settings, rel: &str) -> Result<Vec<Entry>, NotebookError> {
+    connected_notebook(settings)?.list_dir(rel)
+}
+
+#[tauri::command]
+fn read_note(state: tauri::State<'_, SettingsState>, path: String) -> Result<String, NotebookError> {
+    read_note_impl(&state.current.lock().unwrap(), &path)
+}
+
+fn read_note_impl(settings: &Settings, rel: &str) -> Result<String, NotebookError> {
+    connected_notebook(settings)?.read_note(rel)
+}
+
+fn connected_notebook(settings: &Settings) -> Result<Notebook, NotebookError> {
     let root = settings
         .notebook
         .path
         .as_ref()
         .ok_or(NotebookError::NotConnected)?;
-    let notebook = Notebook::new(
+    Ok(Notebook::new(
         root,
         settings.notebook.files.extensions.clone(),
         settings.notebook.files.show_hidden,
-    );
-    notebook.list_dir(rel)
+    ))
 }
 
 // API keys live in the OS keychain, never in the settings JSON. The
@@ -130,7 +142,8 @@ pub fn run() {
             set_api_key,
             has_api_key,
             delete_api_key,
-            list_dir
+            list_dir,
+            read_note
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -181,6 +194,21 @@ mod tests {
         let entries = list_dir_impl(&settings, "").unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "note.md");
+    }
+
+    #[test]
+    fn read_note_returns_contents_and_maps_no_notebook_to_not_connected() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("note.md"), "# Hi\n\nbody").unwrap();
+
+        let mut settings = Settings::default();
+        assert!(matches!(
+            read_note_impl(&settings, "note.md"),
+            Err(NotebookError::NotConnected)
+        ));
+
+        settings.notebook.path = Some(dir.path().to_string_lossy().into_owned());
+        assert_eq!(read_note_impl(&settings, "note.md").unwrap(), "# Hi\n\nbody");
     }
 
     #[test]
