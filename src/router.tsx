@@ -59,6 +59,9 @@ function RootLayout() {
 
   const openNote = (fullPath: string) =>
     navigate({ to: "/notes/$", params: { _splat: toRelative(fullPath) } });
+  // The lazy tree already speaks notebook-relative paths.
+  const openRelative = (relPath: string) =>
+    navigate({ to: "/notes/$", params: { _splat: relPath } });
 
   const paletteItems: PaletteItem[] = [
     {
@@ -125,11 +128,7 @@ function RootLayout() {
       />
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {opened && sidebar && (
-          <Sidebar
-            selected={`${NOTES_ROOT}/${splat}`}
-            onSelect={openNote}
-            onNew={() => setCmd(true)}
-          />
+          <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
         )}
         <Outlet />
       </div>
