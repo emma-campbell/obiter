@@ -12,7 +12,7 @@ import { RecoveryToast } from "./RecoveryToast";
 function testSettings(): SettingsDoc {
   return {
     version: 1,
-    vault: {
+    notebook: {
       path: null,
       save: { mode: "auto", autosaveDebounceMs: 1000 },
       dailyNote: { filenameFormat: "YYYY-MM-DD", folder: "" },

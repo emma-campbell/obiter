@@ -14,7 +14,7 @@ import { Settings } from "./Settings";
 function testSettings(): SettingsDoc {
   return {
     version: 1,
-    vault: {
+    notebook: {
       path: "/Users/emma/Notes",
       save: { mode: "auto", autosaveDebounceMs: 1000 },
       dailyNote: { filenameFormat: "YYYY-MM-DD", folder: "" },
@@ -110,7 +110,7 @@ describe("Settings modal", () => {
     });
 
     await waitFor(() => {
-      expect(store.settings.vault.delete).toBe("permanent");
+      expect(store.settings.notebook.delete).toBe("permanent");
     });
     expect(calls.some((c) => c.cmd === "update_settings")).toBe(true);
     // The control now reads the persisted value back from the provider.
@@ -128,7 +128,7 @@ describe("Settings modal", () => {
 
     fireEvent.keyDown(format, { key: "Enter" });
     await waitFor(() => {
-      expect(store.settings.vault.dailyNote.filenameFormat).toBe("YYYY-MM-DD-dddd");
+      expect(store.settings.notebook.dailyNote.filenameFormat).toBe("YYYY-MM-DD-dddd");
     });
   });
 
@@ -165,7 +165,7 @@ describe("Settings modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Change" }));
 
     await waitFor(() => {
-      expect(store.settings.vault.path).toBe("/Users/emma/Writing");
+      expect(store.settings.notebook.path).toBe("/Users/emma/Writing");
     });
   });
 
@@ -178,7 +178,7 @@ describe("Settings modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Disconnect folder" }));
 
     await waitFor(() => {
-      expect(store.settings.vault.path).toBeNull();
+      expect(store.settings.notebook.path).toBeNull();
     });
     expect(calls.some((c) => c.cmd === "plugin:dialog|message")).toBe(true);
     expect(disconnected).toBe(true);
@@ -194,7 +194,7 @@ describe("Settings modal", () => {
 
     // Confirm resolves async; give the handler a beat before asserting.
     await waitFor(() => {
-      expect(store.settings.vault.path).toBe("/Users/emma/Notes");
+      expect(store.settings.notebook.path).toBe("/Users/emma/Notes");
     });
     expect(disconnected).toBe(false);
   });
@@ -228,8 +228,8 @@ describe("Settings modal", () => {
 
   it("reload picks up hand-edited values and re-renders the controls", async () => {
     const edited = testSettings();
-    edited.vault.delete = "permanent";
-    edited.vault.dailyNote.filenameFormat = "DD-MM-YYYY";
+    edited.notebook.delete = "permanent";
+    edited.notebook.dailyNote.filenameFormat = "DD-MM-YYYY";
     mockBackend(testSettings(), { onReload: () => edited });
     renderSettings();
     await settled();
