@@ -236,14 +236,17 @@ describe("Settings modal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Reload settings from file" }));
 
+    // The daily-note CommitInput re-syncs its draft in a separate effect
+    // from the select's re-render, so wait on it too rather than assuming
+    // both flush in the same tick.
     await waitFor(() => {
       expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe(
         "permanent",
       );
+      expect((screen.getByLabelText("Daily note filename format") as HTMLInputElement).value).toBe(
+        "DD-MM-YYYY",
+      );
     });
-    expect((screen.getByLabelText("Daily note filename format") as HTMLInputElement).value).toBe(
-      "DD-MM-YYYY",
-    );
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
