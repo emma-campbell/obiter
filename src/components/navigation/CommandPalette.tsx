@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { CornerDownLeft, Search } from "lucide-react";
+import { CornerDownLeft, FileText, Search } from "lucide-react";
+import type { Entry } from "../../notebook/notebook";
 import { Icon } from "../core/Icon";
 import { Kbd } from "../core/Kbd";
 
@@ -22,6 +23,16 @@ export interface CommandPaletteProps {
   items?: PaletteItem[];
   onClose?: () => void;
   placeholder?: string;
+  /** Filename search over the notebook; results appear as a Notes section. */
+  searchNotes?: (query: string) => Promise<Entry[]>;
+  /** Open a note by its notebook-relative path. */
+  onOpenNote?: (path: string) => void;
+}
+
+/** Parent folder of a notebook-relative path, for the result hint. */
+function dirOf(path: string): string {
+  const slash = path.lastIndexOf("/");
+  return slash === -1 ? "notebook root" : path.slice(0, slash);
 }
 
 /**
@@ -34,29 +45,60 @@ export function CommandPalette({
   items = [],
   onClose,
   placeholder = "Search notes, or run a command",
+  searchNotes,
+  onOpenNote,
 }: CommandPaletteProps) {
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
+  const [noteHits, setNoteHits] = useState<Entry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setQ("");
       setActive(0);
+      setNoteHits([]);
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [open]);
 
+  // Note search runs against the backend (debounced), not the static items —
+  // the backend already filtered, so its results are shown as-is.
+  useEffect(() => {
+    if (!open || !searchNotes) return;
+    const s = q.trim();
+    if (!s) {
+      setNoteHits([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      searchNotes(s)
+        .then(setNoteHits)
+        .catch(() => setNoteHits([]));
+    }, 120);
+    return () => clearTimeout(t);
+  }, [q, open, searchNotes]);
+
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return items.filter(
+    const commands = items.filter(
       (it) =>
         !s ||
         it.label.toLowerCase().includes(s) ||
         (it.hint ?? "").toLowerCase().includes(s) ||
         (it.keywords ?? "").toLowerCase().includes(s),
     );
-  }, [q, items]);
+    const notes: PaletteItem[] = noteHits.map((hit) => ({
+      id: `note:${hit.path}`,
+      label: hit.name,
+      section: "Notes",
+      icon: FileText,
+      mono: true,
+      hint: dirOf(hit.path),
+      run: () => onOpenNote?.(hit.path),
+    }));
+    return [...commands, ...notes];
+  }, [q, items, noteHits, onOpenNote]);
 
   useEffect(() => {
     setActive((a) => Math.min(a, Math.max(0, filtered.length - 1)));

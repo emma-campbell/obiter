@@ -78,6 +78,18 @@ fn read_note_impl(settings: &Settings, rel: &str) -> Result<String, NotebookErro
     connected_notebook(settings)?.read_note(rel)
 }
 
+#[tauri::command]
+fn search_notes(
+    state: tauri::State<'_, SettingsState>,
+    query: String,
+) -> Result<Vec<Entry>, NotebookError> {
+    search_notes_impl(&state.current.lock().unwrap(), &query)
+}
+
+fn search_notes_impl(settings: &Settings, query: &str) -> Result<Vec<Entry>, NotebookError> {
+    connected_notebook(settings)?.search(query)
+}
+
 fn connected_notebook(settings: &Settings) -> Result<Notebook, NotebookError> {
     let root = settings
         .notebook
@@ -143,7 +155,8 @@ pub fn run() {
             has_api_key,
             delete_api_key,
             list_dir,
-            read_note
+            read_note,
+            search_notes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

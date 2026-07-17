@@ -13,3 +13,8 @@ export function listDir(path: string): Promise<Entry[]> {
 export function readNote(path: string): Promise<string> {
   return invoke<string>("read_note", { path });
 }
+
+/** Find notes whose filename matches `query` (case-insensitive subsequence). */
+export function searchNotes(query: string): Promise<Entry[]> {
+  return invoke<Entry[]>("search_notes", { query });
+}
