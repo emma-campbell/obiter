@@ -9,12 +9,13 @@ import {
   createRoute,
   createRouter,
   Outlet,
+  redirect,
   useNavigate,
   useParams,
-  useRouterState,
 } from "@tanstack/react-router";
 import { Folder, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
-import { EmptyState } from "./app/EmptyState";
+import { useChooseFolder } from "./notebook/useChooseFolder";
+import { NotebookGate, useNotebookStatus } from "./app/NotebookGate";
 import { RecoveryToast } from "./app/RecoveryToast";
 import { Settings } from "./app/Settings";
 import { Sidebar } from "./app/Sidebar";
@@ -29,10 +30,6 @@ function RootLayout() {
   const [cmd, setCmd] = useState(false);
   const [settings, setSettings] = useState(false);
 
-  // In the app whenever we're under /notes — with a note open (/notes/<path>)
-  // or not (/notes). Only the first-run picker ("/") hides the sidebar.
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const inApp = pathname.startsWith("/notes");
   const opened = splat !== undefined && splat !== "";
   const path = opened && splat ? splat : "obiter";
 
@@ -60,6 +57,7 @@ function RootLayout() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  const chooseFolder = useChooseFolder();
   // The lazy tree speaks notebook-relative paths, matching the route.
   const openRelative = (relPath: string) =>
     navigate({ to: "/notes/$", params: { _splat: relPath } });
@@ -94,53 +92,50 @@ function RootLayout() {
       label: "Change folder",
       section: "Commands",
       icon: Folder,
-      run: () => navigate({ to: "/" }),
+      run: () => void chooseFolder(),
     },
     // Jump-to-note (backend search) lands in a later slice.
   ];
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        background: "var(--paper)",
-      }}
-    >
-      <Titlebar
-        path={path}
-        sidebarOpen={sidebar}
-        onToggleSidebar={() => setSidebar((s) => !s)}
-        onSearch={() => setCmd(true)}
-        onSettings={() => setSettings(true)}
-      />
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {inApp && sidebar && (
-          <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
-        )}
-        <Outlet />
-      </div>
-      <RecoveryToast onViewSettings={() => setSettings(true)} />
-      {cmd && <CommandPalette open items={paletteItems} onClose={() => setCmd(false)} />}
-      {settings && (
-        <Settings
-          onClose={() => setSettings(false)}
-          onDisconnect={() => {
-            setSettings(false);
-            navigate({ to: "/" });
-          }}
+    <NotebookGate>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          background: "var(--paper)",
+        }}
+      >
+        <Titlebar
+          path={path}
+          sidebarOpen={sidebar}
+          onToggleSidebar={() => setSidebar((s) => !s)}
+          onSearch={() => setCmd(true)}
+          onSettings={() => setSettings(true)}
         />
-      )}
-    </div>
+        <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+          {sidebar && (
+            <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
+          )}
+          <Outlet />
+        </div>
+        <RecoveryToast onViewSettings={() => setSettings(true)} />
+        {cmd && <CommandPalette open items={paletteItems} onClose={() => setCmd(false)} />}
+        {settings && (
+          <Settings
+            onClose={() => setSettings(false)}
+            onDisconnect={() => {
+              setSettings(false);
+              navigate({ to: "/" });
+            }}
+          />
+        )}
+      </div>
+    </NotebookGate>
   );
-}
-
-function EmptyRoute() {
-  const navigate = useNavigate();
-  return <EmptyState onOpen={() => navigate({ to: "/notes" })} />;
 }
 
 function NoteRoute() {
@@ -148,8 +143,12 @@ function NoteRoute() {
   return <Editor path={splat ?? ""} />;
 }
 
-/** "/notes" with nothing selected — the notebook is open, pick a note. */
+/**
+ * "/notes" with nothing selected. The notebook is open; the message depends
+ * on whether it actually holds anything.
+ */
 function NoNoteSelected() {
+  const status = useNotebookStatus();
   return (
     <div
       style={{
@@ -159,19 +158,27 @@ function NoNoteSelected() {
         justifyContent: "center",
         color: "var(--slate)",
         fontSize: 14,
+        textAlign: "center",
+        padding: "0 24px",
       }}
     >
-      Select a note from the sidebar.
+      {status === "empty"
+        ? "This notebook is empty. Add a markdown file to the folder to get started."
+        : "Select a note from the sidebar."}
     </div>
   );
 }
 
 const rootRoute = createRootRoute({ component: RootLayout });
 
+// "/" is just the app entry — the NotebookGate decides first-run vs app from
+// settings, so the URL only needs to land inside the notebook shell.
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: EmptyRoute,
+  beforeLoad: () => {
+    throw redirect({ to: "/notes" });
+  },
 });
 
 const notesRoute = createRoute({
