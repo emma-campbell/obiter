@@ -120,10 +120,25 @@ export function FileTree({ loadChildren, selected, onSelect, style, ...rest }: F
   // Load the root on mount (and whenever the notebook it reads changes).
   useEffect(() => {
     void load("").catch(() => {
-      // A missing/unreadable notebook is the shell's concern (the error
-      // surface lands in a later slice); the tree just stays empty here.
+      // A missing/unreadable notebook is the shell's concern (handled by
+      // the gate); the tree just stays empty here.
     });
   }, [load]);
+
+  // Re-list the root and every expanded folder when the window regains
+  // focus, so notes added or removed in another app appear without a
+  // restart. Collapsed folders stay lazy. This is the interim for having
+  // no file watcher (deliberately out of scope) — external edits almost
+  // always happen while Obiter is in the background, so focus is exactly
+  // when staleness matters.
+  useEffect(() => {
+    const onFocus = () => {
+      void load("").catch(() => {});
+      for (const path of expanded) void load(path).catch(() => {});
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [load, expanded]);
 
   const toggle = (node: Entry) => {
     const opening = !expanded.has(node.path);

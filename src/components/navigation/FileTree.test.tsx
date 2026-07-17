@@ -61,6 +61,58 @@ describe("FileTree (lazy)", () => {
     expect(onSelect).toHaveBeenCalledWith("reading.md");
   });
 
+  it("re-lists the root and expanded folders on window focus", async () => {
+    let recipesChildren: Entry[] = [
+      { name: "dumplings.md", path: "recipes/dumplings.md", kind: "file" },
+    ];
+    let rootChildren: Entry[] = [
+      { name: "recipes", path: "recipes", kind: "folder" },
+      { name: "reading.md", path: "reading.md", kind: "file" },
+    ];
+    const load = vi.fn((path: string) => {
+      if (path === "") return Promise.resolve(rootChildren);
+      if (path === "recipes") return Promise.resolve(recipesChildren);
+      return Promise.resolve([]);
+    });
+    render(<FileTree loadChildren={load} />);
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+
+    fireEvent.click(screen.getByText("recipes"));
+    await waitFor(() => expect(screen.getByText("dumplings.md")).toBeTruthy());
+
+    // Notes added externally to both the root and the expanded folder.
+    rootChildren = [...rootChildren, { name: "new-top.md", path: "new-top.md", kind: "file" }];
+    recipesChildren = [
+      ...recipesChildren,
+      { name: "gyoza.md", path: "recipes/gyoza.md", kind: "file" },
+    ];
+
+    fireEvent(window, new Event("focus"));
+
+    await waitFor(() => {
+      expect(screen.getByText("new-top.md")).toBeTruthy();
+      expect(screen.getByText("gyoza.md")).toBeTruthy();
+    });
+  });
+
+  it("does not re-list collapsed folders on focus", async () => {
+    const load = vi.fn((path: string) => {
+      if (path === "")
+        return Promise.resolve([{ name: "recipes", path: "recipes", kind: "folder" }]);
+      return Promise.resolve([]);
+    });
+    render(<FileTree loadChildren={load} />);
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+
+    fireEvent(window, new Event("focus"));
+
+    await waitFor(() => {
+      expect(load.mock.calls.filter(([p]) => p === "").length).toBeGreaterThanOrEqual(2);
+    });
+    // "recipes" was never expanded, so focus never fetches it.
+    expect(load).not.toHaveBeenCalledWith("recipes");
+  });
+
   it("collapsing a folder doesn't refetch on re-expand", async () => {
     const load = loader();
     render(<FileTree loadChildren={load} />);
