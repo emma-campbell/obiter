@@ -15,7 +15,7 @@ export interface SaveSettings {
 
 export interface DailyNoteSettings {
   filenameFormat: string;
-  /** Folder for daily notes, relative to the vault root. Empty = root. */
+  /** Folder for daily notes, relative to the notebook root. Empty = root. */
   folder: string;
 }
 
@@ -24,7 +24,7 @@ export interface FileVisibilitySettings {
   showHidden: boolean;
 }
 
-export interface VaultSettings {
+export interface NotebookSettings {
   /** Absolute path to the notes folder. Null until the user picks one. */
   path: string | null;
   save: SaveSettings;
@@ -56,7 +56,7 @@ export interface RecoveryNotice {
 
 export interface Settings {
   version: number;
-  vault: VaultSettings;
+  notebook: NotebookSettings;
   appearance: AppearanceSettings;
   ai: AiSettings;
   /** Free-form runtime feature flags. Read as `flags[name] ?? false`. */

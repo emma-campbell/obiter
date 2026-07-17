@@ -22,7 +22,7 @@ pub const SETTINGS_VERSION: u32 = 1;
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub version: u32,
-    pub vault: VaultSettings,
+    pub notebook: NotebookSettings,
     pub appearance: AppearanceSettings,
     pub ai: AiSettings,
     /// Free-form runtime feature flags. Must be a known schema key so a
@@ -32,7 +32,7 @@ pub struct Settings {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
-pub struct VaultSettings {
+pub struct NotebookSettings {
     /// Absolute path to the notes folder. Null until the user picks one.
     pub path: Option<String>,
     pub save: SaveSettings,
@@ -52,7 +52,7 @@ pub struct SaveSettings {
 #[serde(rename_all = "camelCase", default)]
 pub struct DailyNoteSettings {
     pub filename_format: String,
-    /// Folder for daily notes, relative to the vault root. Empty = root.
+    /// Folder for daily notes, relative to the notebook root. Empty = root.
     pub folder: String,
 }
 
@@ -122,7 +122,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             version: SETTINGS_VERSION,
-            vault: VaultSettings::default(),
+            notebook: NotebookSettings::default(),
             appearance: AppearanceSettings::default(),
             ai: AiSettings::default(),
             flags: BTreeMap::new(),
@@ -130,7 +130,7 @@ impl Default for Settings {
     }
 }
 
-impl Default for VaultSettings {
+impl Default for NotebookSettings {
     fn default() -> Self {
         Self {
             path: None,
@@ -320,9 +320,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_path(&dir);
         let mut settings = Settings::default();
-        settings.vault.path = Some("/Users/emma/Notes".to_string());
-        settings.vault.save.mode = SaveMode::Manual;
-        settings.vault.delete = DeleteMode::Permanent;
+        settings.notebook.path = Some("/Users/emma/Notes".to_string());
+        settings.notebook.save.mode = SaveMode::Manual;
+        settings.notebook.delete = DeleteMode::Permanent;
         settings.appearance.theme = Theme::Dark;
         settings.appearance.editor_font_size = 14.5;
         settings.ai.enabled = true;
@@ -345,7 +345,7 @@ mod tests {
         assert!(text.contains("\"version\": 1"));
         // Pretty-printed means multi-line with indentation, not one blob.
         assert!(text.lines().count() > 10);
-        assert!(text.contains("\n  \"vault\""));
+        assert!(text.contains("\n  \"notebook\""));
     }
 
     #[test]
@@ -414,7 +414,7 @@ mod tests {
             r#"{
                 "version": 1,
                 "keybindings": { "save": "cmd+s" },
-                "vault": { "path": "/notes", "autosaev": true },
+                "notebook": { "path": "/notes", "autosaev": true },
                 "appearance": { "theme": "dark", "vibrancy": "full" }
             }"#,
         )
@@ -422,7 +422,7 @@ mod tests {
 
         let loaded = load(&path).unwrap();
 
-        assert_eq!(loaded.vault.path, Some("/notes".to_string()));
+        assert_eq!(loaded.notebook.path, Some("/notes".to_string()));
         assert_eq!(loaded.appearance.theme, Theme::Dark);
         // Untouched sections fall back to defaults.
         assert_eq!(loaded.ai, AiSettings::default());

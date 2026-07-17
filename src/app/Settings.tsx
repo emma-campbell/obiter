@@ -1,4 +1,4 @@
-// Settings modal — three tabs (Vault / Appearance / AI) over the
+// Settings modal — three tabs (Notebook / Appearance / AI) over the
 // SettingsProvider. Every control applies on change: selects and toggles
 // immediately, text inputs on blur/Enter. There is no Save button — the
 // backend persists each change atomically, so the file always matches the
@@ -24,9 +24,9 @@ const PROVIDER_LABELS: Record<AiProvider, string> = {
   anthropic: "Anthropic",
 };
 
-type Tab = "vault" | "appearance" | "ai";
+type Tab = "notebook" | "appearance" | "ai";
 const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "vault", label: "Vault" },
+  { id: "notebook", label: "Notebook" },
   { id: "appearance", label: "Appearance" },
   { id: "ai", label: "AI" },
 ];
@@ -167,7 +167,7 @@ export interface SettingsProps {
 
 export function Settings({ onClose, onDisconnect }: SettingsProps) {
   const { settings, update, reload, reloadError, clearReloadError } = useSettings();
-  const [tab, setTab] = useState<Tab>("vault");
+  const [tab, setTab] = useState<Tab>("notebook");
   // "Other…" chosen in the model dropdown; a stored model outside the
   // curated list also renders as custom.
   const [customModel, setCustomModel] = useState(false);
@@ -185,14 +185,14 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
       "Disconnect this folder? Obiter forgets the folder; the files stay exactly where they are on disk.",
     );
     if (!ok) return;
-    patch((s) => ({ ...s, vault: { ...s.vault, path: null } }));
+    patch((s) => ({ ...s, notebook: { ...s.notebook, path: null } }));
     onDisconnect?.();
   };
 
   const changeFolder = async () => {
     const picked = await open({ directory: true, multiple: false, title: "Choose notes folder" });
     if (typeof picked === "string") {
-      patch((s) => ({ ...s, vault: { ...s.vault, path: picked } }));
+      patch((s) => ({ ...s, notebook: { ...s.notebook, path: picked } }));
     }
   };
 
@@ -328,7 +328,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
         )}
 
         <div style={{ padding: "6px 22px 20px", overflow: "auto" }}>
-          {tab === "vault" && (
+          {tab === "notebook" && (
             <>
               <Row
                 label="Notes folder"
@@ -338,7 +338,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   <Input
                     mono
                     readOnly
-                    value={settings.vault.path ?? ""}
+                    value={settings.notebook.path ?? ""}
                     placeholder="No folder connected"
                     aria-label="Notes folder path"
                   />
@@ -356,13 +356,13 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   <select
                     style={selectStyle}
                     aria-label="Save mode"
-                    value={settings.vault.save.mode}
+                    value={settings.notebook.save.mode}
                     onChange={(e) =>
                       patch((s) => ({
                         ...s,
-                        vault: {
-                          ...s.vault,
-                          save: { ...s.vault.save, mode: e.target.value as "manual" | "auto" },
+                        notebook: {
+                          ...s.notebook,
+                          save: { ...s.notebook.save, mode: e.target.value as "manual" | "auto" },
                         },
                       }))
                     }
@@ -370,20 +370,20 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                     <option value="auto">Autosave</option>
                     <option value="manual">Manual (⌘S)</option>
                   </select>
-                  {settings.vault.save.mode === "auto" && (
+                  {settings.notebook.save.mode === "auto" && (
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <CommitInput
                         aria-label="Autosave debounce in milliseconds"
                         style={{ width: 90 }}
-                        value={String(settings.vault.save.autosaveDebounceMs)}
+                        value={String(settings.notebook.save.autosaveDebounceMs)}
                         onCommit={(raw) => {
                           const ms = Number.parseInt(raw, 10);
                           if (!Number.isFinite(ms) || ms < 0) return;
                           patch((s) => ({
                             ...s,
-                            vault: {
-                              ...s.vault,
-                              save: { ...s.vault.save, autosaveDebounceMs: ms },
+                            notebook: {
+                              ...s.notebook,
+                              save: { ...s.notebook.save, autosaveDebounceMs: ms },
                             },
                           }));
                         }}
@@ -395,29 +395,32 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
               </Row>
               <Row
                 label="Daily notes"
-                hint="Filename format, and the folder (relative to the vault) they land in."
+                hint="Filename format, and the folder (relative to the notebook) they land in."
               >
                 <div style={{ display: "flex", gap: 8 }}>
                   <CommitInput
                     mono
                     aria-label="Daily note filename format"
-                    value={settings.vault.dailyNote.filenameFormat}
+                    value={settings.notebook.dailyNote.filenameFormat}
                     onCommit={(filenameFormat) =>
                       patch((s) => ({
                         ...s,
-                        vault: { ...s.vault, dailyNote: { ...s.vault.dailyNote, filenameFormat } },
+                        notebook: {
+                          ...s.notebook,
+                          dailyNote: { ...s.notebook.dailyNote, filenameFormat },
+                        },
                       }))
                     }
                   />
                   <CommitInput
                     mono
                     aria-label="Daily note folder"
-                    placeholder="vault root"
-                    value={settings.vault.dailyNote.folder}
+                    placeholder="notebook root"
+                    value={settings.notebook.dailyNote.folder}
                     onCommit={(folder) =>
                       patch((s) => ({
                         ...s,
-                        vault: { ...s.vault, dailyNote: { ...s.vault.dailyNote, folder } },
+                        notebook: { ...s.notebook, dailyNote: { ...s.notebook.dailyNote, folder } },
                       }))
                     }
                   />
@@ -430,11 +433,11 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                 <select
                   style={selectStyle}
                   aria-label="Delete behavior"
-                  value={settings.vault.delete}
+                  value={settings.notebook.delete}
                   onChange={(e) =>
                     patch((s) => ({
                       ...s,
-                      vault: { ...s.vault, delete: e.target.value as "trash" | "permanent" },
+                      notebook: { ...s.notebook, delete: e.target.value as "trash" | "permanent" },
                     }))
                   }
                 >
@@ -450,7 +453,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   <CommitInput
                     mono
                     aria-label="Shown file extensions"
-                    value={settings.vault.files.extensions.join(", ")}
+                    value={settings.notebook.files.extensions.join(", ")}
                     onCommit={(raw) => {
                       const extensions = raw
                         .split(",")
@@ -458,7 +461,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                         .filter(Boolean);
                       patch((s) => ({
                         ...s,
-                        vault: { ...s.vault, files: { ...s.vault.files, extensions } },
+                        notebook: { ...s.notebook, files: { ...s.notebook.files, extensions } },
                       }));
                     }}
                   />
@@ -473,13 +476,13 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   >
                     <input
                       type="checkbox"
-                      checked={settings.vault.files.showHidden}
+                      checked={settings.notebook.files.showHidden}
                       onChange={(e) =>
                         patch((s) => ({
                           ...s,
-                          vault: {
-                            ...s.vault,
-                            files: { ...s.vault.files, showHidden: e.target.checked },
+                          notebook: {
+                            ...s.notebook,
+                            files: { ...s.notebook.files, showHidden: e.target.checked },
                           },
                         }))
                       }

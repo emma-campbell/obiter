@@ -12,7 +12,7 @@ import type { RecoveryNotice, Settings } from "./settings";
 function testSettings(): Settings {
   return {
     version: 1,
-    vault: {
+    notebook: {
       path: null,
       save: { mode: "auto", autosaveDebounceMs: 1000 },
       dailyNote: { filenameFormat: "YYYY-MM-DD", folder: "" },
