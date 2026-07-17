@@ -127,6 +127,15 @@ impl Notebook {
         Ok(entries)
     }
 
+    /// Read a note's contents. Root-confined like `list_dir`, and — because
+    /// resolution is independent of the tree — it resolves a note whose
+    /// parent folder was never expanded, so search/jump can open anything.
+    pub fn read_note(&self, rel: &str) -> Result<String, NotebookError> {
+        let root = self.canon_root()?;
+        let file = self.resolve(&root, rel)?;
+        Ok(std::fs::read_to_string(file)?)
+    }
+
     /// Canonicalized notebook root. A root that can't be canonicalized (or
     /// isn't a directory) is `Missing`, never a bare IO error.
     fn canon_root(&self) -> Result<PathBuf, NotebookError> {
@@ -305,6 +314,41 @@ mod tests {
 
         // Listing through the symlink resolves outside the root → rejected.
         let err = notebook(&root).list_dir("escape").unwrap_err();
+        assert!(matches!(err, NotebookError::OutsideRoot));
+    }
+
+    #[test]
+    fn reads_a_note_by_relative_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::create_dir(root.join("recipes")).unwrap();
+        fs::write(root.join("recipes/dumplings.md"), "# Dumplings\n\nRest the dough.").unwrap();
+
+        let body = notebook(root).read_note("recipes/dumplings.md").unwrap();
+        assert_eq!(body, "# Dumplings\n\nRest the dough.");
+    }
+
+    #[test]
+    fn reads_a_note_whose_folder_was_never_listed() {
+        // No list_dir call precedes this — resolution is independent of the
+        // tree, so a palette jump can open a note directly.
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::create_dir_all(root.join("deep/nested")).unwrap();
+        fs::write(root.join("deep/nested/note.md"), "buried").unwrap();
+
+        let body = notebook(root).read_note("deep/nested/note.md").unwrap();
+        assert_eq!(body, "buried");
+    }
+
+    #[test]
+    fn read_note_rejects_paths_outside_the_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        fs::write(dir.path().join("secret.md"), "top secret").unwrap();
+
+        let err = notebook(&root).read_note("../secret.md").unwrap_err();
         assert!(matches!(err, NotebookError::OutsideRoot));
     }
 
