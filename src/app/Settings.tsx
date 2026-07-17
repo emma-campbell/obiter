@@ -6,11 +6,12 @@
 // through the native dialog first.
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { confirm, open } from "@tauri-apps/plugin-dialog";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { RotateCw, X } from "lucide-react";
 import { Button } from "../components/core/Button";
 import { Icon } from "../components/core/Icon";
 import { Input } from "../components/core/Input";
+import { useChooseFolder } from "../notebook/useChooseFolder";
 import { useSettings } from "../settings/SettingsProvider";
 import { deleteApiKey, hasApiKey, setApiKey } from "../settings/secrets";
 import type { AiProvider, Settings as SettingsDoc } from "../settings/settings";
@@ -171,6 +172,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
   // "Other…" chosen in the model dropdown; a stored model outside the
   // curated list also renders as custom.
   const [customModel, setCustomModel] = useState(false);
+  const chooseFolder = useChooseFolder();
 
   if (!settings) return null;
 
@@ -187,13 +189,6 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
     if (!ok) return;
     patch((s) => ({ ...s, notebook: { ...s.notebook, path: null } }));
     onDisconnect?.();
-  };
-
-  const changeFolder = async () => {
-    const picked = await open({ directory: true, multiple: false, title: "Choose notes folder" });
-    if (typeof picked === "string") {
-      patch((s) => ({ ...s, notebook: { ...s.notebook, path: picked } }));
-    }
   };
 
   const modelIsCurated = CURATED_MODELS[settings.ai.provider].includes(settings.ai.model);
@@ -345,7 +340,7 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   <Button
                     size="md"
                     style={{ flex: "0 0 auto" }}
-                    onClick={() => void changeFolder()}
+                    onClick={() => void chooseFolder()}
                   >
                     Change
                   </Button>
