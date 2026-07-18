@@ -29,9 +29,13 @@ export interface UseAutosaveArgs {
   read: () => string;
   /** Persists the content; rejects on failure (buffer is kept, we retry). */
   write: (content: string) => Promise<void>;
+  /** Re-reads the note from disk (for the on-focus conflict check). */
+  readDisk?: () => Promise<string>;
+  /** Replaces the editor's content with a version reloaded from disk. */
+  applyReload?: (content: string) => void;
 }
 
-export function useAutosave({ read, write }: UseAutosaveArgs): Autosave {
+export function useAutosave({ read, write, readDisk, applyReload }: UseAutosaveArgs): Autosave {
   const [status, setStatus] = useState<SaveStatus>("saved");
   const baseline = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -40,6 +44,10 @@ export function useAutosave({ read, write }: UseAutosaveArgs): Autosave {
   readRef.current = read;
   const writeRef = useRef(write);
   writeRef.current = write;
+  const readDiskRef = useRef(readDisk);
+  readDiskRef.current = readDisk;
+  const applyReloadRef = useRef(applyReload);
+  applyReloadRef.current = applyReload;
 
   const save = useCallback(async () => {
     const content = readRef.current();
@@ -77,6 +85,27 @@ export function useAutosave({ read, write }: UseAutosaveArgs): Autosave {
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
   }, [flush]);
+
+  // On regaining focus, pick up a note that changed on disk while we were
+  // away (external edit, git pull, sync). If our buffer is clean, silently
+  // reload — zero loss. If it's dirty, keep the user's buffer; the full
+  // simultaneous-conflict UX is a separate slice (#34).
+  useEffect(() => {
+    if (!readDiskRef.current || !applyReloadRef.current) return;
+    const onFocus = async () => {
+      let disk: string;
+      try {
+        disk = await readDiskRef.current!();
+      } catch {
+        return; // unreadable now is the shell's concern, not ours
+      }
+      if (disk === baseline.current) return; // disk unchanged
+      if (readRef.current() !== baseline.current) return; // buffer dirty — keep it
+      applyReloadRef.current!(disk);
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   return { status, schedule, flush, markSaved };
 }

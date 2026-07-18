@@ -34,27 +34,36 @@ export function Editor({ path }: EditorProps) {
   const [words, setWords] = useState(0);
   const [active, setActive] = useState<ActiveMarks>({ bold: false, italic: false, code: false });
 
+  // Apply a full note's markdown: split frontmatter off (kept aside), hand
+  // the body to the editor. Used both on initial load and on an external
+  // reload triggered from focus.
+  const applyContent = (md: string) => {
+    const { frontmatter, body: noteBody } = splitFrontmatter(md);
+    frontmatterRef.current = frontmatter;
+    setBody(noteBody);
+  };
+  const applyContentRef = useRef(applyContent);
+  applyContentRef.current = applyContent;
+
   const autosave = useAutosave({
     read: () => joinFrontmatter(frontmatterRef.current, pmRef.current?.getMarkdown() ?? ""),
     write: (contents) => writeNote(path, contents),
+    readDisk: () => readNote(path),
+    applyReload: (md) => applyContentRef.current(md),
   });
   // Stable ref so the mount effect doesn't re-run when autosave identity
   // changes; the editor mounts once per loaded note.
   const autosaveRef = useRef(autosave);
   autosaveRef.current = autosave;
 
-  // Load the note whenever the open path changes: split frontmatter off,
-  // keep it aside, hand the body to the editor.
+  // Load the note whenever the open path changes.
   useEffect(() => {
     let cancelled = false;
     setBody(null);
     setError(false);
     readNote(path)
       .then((md) => {
-        if (cancelled) return;
-        const { frontmatter, body: noteBody } = splitFrontmatter(md);
-        frontmatterRef.current = frontmatter;
-        setBody(noteBody);
+        if (!cancelled) applyContentRef.current(md);
       })
       .catch(() => {
         if (!cancelled) setError(true);

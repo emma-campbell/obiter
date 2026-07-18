@@ -99,6 +99,55 @@ describe("useAutosave", () => {
     expect(write).toHaveBeenLastCalledWith("xy");
   });
 
+  it("reloads on focus when the note changed on disk and the buffer is clean", async () => {
+    const { read } = source("v1");
+    const write = vi.fn().mockResolvedValue(undefined);
+    const readDisk = vi.fn().mockResolvedValue("v2"); // changed externally
+    const applyReload = vi.fn();
+    const { result } = renderHook(() => useAutosave({ read, write, readDisk, applyReload }));
+    act(() => result.current.markSaved("v1")); // baseline v1, buffer clean
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(applyReload).toHaveBeenCalledWith("v2");
+  });
+
+  it("keeps a dirty buffer on focus even when disk changed", async () => {
+    const { box, read } = source("v1");
+    const write = vi.fn().mockResolvedValue(undefined);
+    const readDisk = vi.fn().mockResolvedValue("v2");
+    const applyReload = vi.fn();
+    const { result } = renderHook(() => useAutosave({ read, write, readDisk, applyReload }));
+    act(() => result.current.markSaved("v1"));
+    box.value = "v1 with my edits"; // buffer is now dirty
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(applyReload).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on focus when the note is unchanged on disk", async () => {
+    const { read } = source("v1");
+    const write = vi.fn().mockResolvedValue(undefined);
+    const readDisk = vi.fn().mockResolvedValue("v1"); // same as baseline
+    const applyReload = vi.fn();
+    const { result } = renderHook(() => useAutosave({ read, write, readDisk, applyReload }));
+    act(() => result.current.markSaved("v1"));
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(applyReload).not.toHaveBeenCalled();
+  });
+
   it("flushes pending edits on unmount", async () => {
     const { box, read } = source("x");
     const write = vi.fn().mockResolvedValue(undefined);
