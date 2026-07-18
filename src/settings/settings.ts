@@ -3,15 +3,9 @@
 // The backend owns defaults and validation; the frontend only ever sees
 // a fully-populated document.
 
-export type SaveMode = "manual" | "auto";
 export type DeleteMode = "trash" | "permanent";
 export type Theme = "light" | "dark" | "system";
 export type AiProvider = "anthropic";
-
-export interface SaveSettings {
-  mode: SaveMode;
-  autosaveDebounceMs: number;
-}
 
 export interface DailyNoteSettings {
   filenameFormat: string;
@@ -27,7 +21,6 @@ export interface FileVisibilitySettings {
 export interface NotebookSettings {
   /** Absolute path to the notes folder. Null until the user picks one. */
   path: string | null;
-  save: SaveSettings;
   dailyNote: DailyNoteSettings;
   delete: DeleteMode;
   files: FileVisibilitySettings;
