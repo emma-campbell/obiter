@@ -17,7 +17,6 @@ function settingsWith(path: string | null): SettingsDoc {
     version: 1,
     notebook: {
       path,
-      save: { mode: "auto", autosaveDebounceMs: 1000 },
       dailyNote: { filenameFormat: "YYYY-MM-DD", folder: "" },
       delete: "trash",
       files: { extensions: ["md"], showHidden: false },

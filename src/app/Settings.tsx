@@ -346,48 +346,6 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   </Button>
                 </div>
               </Row>
-              <Row label="Saving" hint="Autosave writes after you pause; manual is ⌘S.">
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <select
-                    style={selectStyle}
-                    aria-label="Save mode"
-                    value={settings.notebook.save.mode}
-                    onChange={(e) =>
-                      patch((s) => ({
-                        ...s,
-                        notebook: {
-                          ...s.notebook,
-                          save: { ...s.notebook.save, mode: e.target.value as "manual" | "auto" },
-                        },
-                      }))
-                    }
-                  >
-                    <option value="auto">Autosave</option>
-                    <option value="manual">Manual (⌘S)</option>
-                  </select>
-                  {settings.notebook.save.mode === "auto" && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <CommitInput
-                        aria-label="Autosave debounce in milliseconds"
-                        style={{ width: 90 }}
-                        value={String(settings.notebook.save.autosaveDebounceMs)}
-                        onCommit={(raw) => {
-                          const ms = Number.parseInt(raw, 10);
-                          if (!Number.isFinite(ms) || ms < 0) return;
-                          patch((s) => ({
-                            ...s,
-                            notebook: {
-                              ...s.notebook,
-                              save: { ...s.notebook.save, autosaveDebounceMs: ms },
-                            },
-                          }));
-                        }}
-                      />
-                      <span style={{ fontSize: 13, color: "var(--slate)" }}>ms debounce</span>
-                    </div>
-                  )}
-                </div>
-              </Row>
               <Row
                 label="Daily notes"
                 hint="Filename format, and the folder (relative to the notebook) they land in."

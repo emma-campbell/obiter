@@ -35,17 +35,9 @@ pub struct Settings {
 pub struct NotebookSettings {
     /// Absolute path to the notes folder. Null until the user picks one.
     pub path: Option<String>,
-    pub save: SaveSettings,
     pub daily_note: DailyNoteSettings,
     pub delete: DeleteMode,
     pub files: FileVisibilitySettings,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct SaveSettings {
-    pub mode: SaveMode,
-    pub autosave_debounce_ms: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -78,13 +70,6 @@ pub struct AiSettings {
     pub model: String,
     /// Override for proxies / compatible local endpoints. Null = provider default.
     pub base_url: Option<String>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum SaveMode {
-    Manual,
-    Auto,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,19 +119,9 @@ impl Default for NotebookSettings {
     fn default() -> Self {
         Self {
             path: None,
-            save: SaveSettings::default(),
             daily_note: DailyNoteSettings::default(),
             delete: DeleteMode::Trash,
             files: FileVisibilitySettings::default(),
-        }
-    }
-}
-
-impl Default for SaveSettings {
-    fn default() -> Self {
-        Self {
-            mode: SaveMode::Auto,
-            autosave_debounce_ms: 1000,
         }
     }
 }
@@ -321,7 +296,6 @@ mod tests {
         let path = settings_path(&dir);
         let mut settings = Settings::default();
         settings.notebook.path = Some("/Users/emma/Notes".to_string());
-        settings.notebook.save.mode = SaveMode::Manual;
         settings.notebook.delete = DeleteMode::Permanent;
         settings.appearance.theme = Theme::Dark;
         settings.appearance.editor_font_size = 14.5;
@@ -429,6 +403,32 @@ mod tests {
     }
 
     #[test]
+    fn a_file_with_the_removed_save_key_still_loads_and_drops_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_path(&dir);
+        // A pre-removal file carrying the old notebook.save object.
+        fs::write(
+            &path,
+            r#"{
+                "version": 1,
+                "notebook": {
+                    "path": "/notes",
+                    "save": { "mode": "manual", "autosaveDebounceMs": 500 }
+                }
+            }"#,
+        )
+        .unwrap();
+
+        // Lenient keys: the removed key is ignored, the rest loads.
+        let loaded = load(&path).unwrap();
+        assert_eq!(loaded.notebook.path, Some("/notes".to_string()));
+
+        // Re-saving writes the file without any save key.
+        save(&path, &loaded).unwrap();
+        assert!(!fs::read_to_string(&path).unwrap().contains("\"save\""));
+    }
+
+    #[test]
     fn wrong_type_for_known_key_is_a_parse_error() {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_path(&dir);
@@ -436,7 +436,7 @@ mod tests {
 
         let edited = fs::read_to_string(&path)
             .unwrap()
-            .replace("\"autosaveDebounceMs\": 1000", "\"autosaveDebounceMs\": \"fast\"");
+            .replace("\"editorFontSize\": 16.0", "\"editorFontSize\": \"big\"");
         fs::write(&path, edited).unwrap();
 
         assert!(matches!(load(&path), Err(SettingsError::Parse(_))));
