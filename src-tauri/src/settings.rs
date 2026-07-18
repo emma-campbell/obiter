@@ -351,7 +351,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_path(&dir);
         let mut settings = Settings::default();
-        settings.flags.insert("experimentalCanvas".to_string(), true);
+        settings
+            .flags
+            .insert("experimentalCanvas".to_string(), true);
         settings.flags.insert("noisyLogging".to_string(), false);
 
         save(&path, &settings).unwrap();

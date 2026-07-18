@@ -122,7 +122,11 @@ impl Notebook {
         entries.sort_by(|a, b| {
             folder_first(a.kind)
                 .cmp(&folder_first(b.kind))
-                .then_with(|| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()))
+                .then_with(|| {
+                    a.name
+                        .to_ascii_lowercase()
+                        .cmp(&b.name.to_ascii_lowercase())
+                })
         });
         Ok(entries)
     }
@@ -137,7 +141,11 @@ impl Notebook {
         let needle = query.to_ascii_lowercase();
         let mut hits = Vec::new();
         self.walk(&root, "", &needle, &mut hits);
-        hits.sort_by(|a, b| a.path.to_ascii_lowercase().cmp(&b.path.to_ascii_lowercase()));
+        hits.sort_by(|a, b| {
+            a.path
+                .to_ascii_lowercase()
+                .cmp(&b.path.to_ascii_lowercase())
+        });
         hits.truncate(MAX_SEARCH_RESULTS);
         Ok(hits)
     }
@@ -214,7 +222,10 @@ impl Notebook {
     /// Canonicalized notebook root. A root that can't be canonicalized (or
     /// isn't a directory) is `Missing`, never a bare IO error.
     fn canon_root(&self) -> Result<PathBuf, NotebookError> {
-        let canonical = self.root.canonicalize().map_err(|_| NotebookError::Missing)?;
+        let canonical = self
+            .root
+            .canonicalize()
+            .map_err(|_| NotebookError::Missing)?;
         if !canonical.is_dir() {
             return Err(NotebookError::Missing);
         }
@@ -336,7 +347,10 @@ mod tests {
         let entries = notebook(root).list_dir("").unwrap();
 
         // Folders (sorted) before files (sorted), case-insensitively.
-        assert_eq!(names(&entries), ["obiter", "recipes", "Aardvark.md", "reading.md"]);
+        assert_eq!(
+            names(&entries),
+            ["obiter", "recipes", "Aardvark.md", "reading.md"]
+        );
         assert_eq!(entries[0].kind, EntryKind::Folder);
         assert_eq!(entries[2].kind, EntryKind::File);
     }
@@ -445,7 +459,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
         fs::create_dir(root.join("recipes")).unwrap();
-        fs::write(root.join("recipes/dumplings.md"), "# Dumplings\n\nRest the dough.").unwrap();
+        fs::write(
+            root.join("recipes/dumplings.md"),
+            "# Dumplings\n\nRest the dough.",
+        )
+        .unwrap();
 
         let body = notebook(root).read_note("recipes/dumplings.md").unwrap();
         assert_eq!(body, "# Dumplings\n\nRest the dough.");
@@ -496,7 +514,10 @@ mod tests {
         let root = dir.path();
         fs::write(root.join("Reading.md"), "").unwrap();
 
-        assert_eq!(names(&notebook(root).search("READING").unwrap()), ["Reading.md"]);
+        assert_eq!(
+            names(&notebook(root).search("READING").unwrap()),
+            ["Reading.md"]
+        );
     }
 
     #[test]
@@ -541,7 +562,10 @@ mod tests {
         for i in 0..80 {
             fs::write(root.join(format!("note-{i:03}.md")), "").unwrap();
         }
-        assert_eq!(notebook(root).search("note").unwrap().len(), MAX_SEARCH_RESULTS);
+        assert_eq!(
+            notebook(root).search("note").unwrap().len(),
+            MAX_SEARCH_RESULTS
+        );
     }
 
     #[test]
@@ -644,7 +668,9 @@ mod tests {
         // A note that is a symlink pointing outside the notebook.
         symlink(&outside, root.join("link.md")).unwrap();
 
-        let err = notebook(&root).write_note("link.md", "hijacked").unwrap_err();
+        let err = notebook(&root)
+            .write_note("link.md", "hijacked")
+            .unwrap_err();
         assert!(matches!(err, NotebookError::OutsideRoot));
         // The outside file is untouched.
         assert_eq!(fs::read_to_string(&outside).unwrap(), "original");

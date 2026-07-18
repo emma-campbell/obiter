@@ -2,7 +2,7 @@ mod notebook;
 mod secrets;
 mod settings;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use notebook::{Entry, Notebook, NotebookError};
@@ -39,7 +39,7 @@ fn reload_settings(state: tauri::State<'_, SettingsState>) -> Result<Settings, S
 /// untouched and never writes to the file — unlike startup recovery, there
 /// is a working state to preserve, so the error is returned for the UI and
 /// the hand-edit stays on disk for the user to fix.
-fn reload_settings_impl(path: &PathBuf, current: &Mutex<Settings>) -> Result<Settings, String> {
+fn reload_settings_impl(path: &Path, current: &Mutex<Settings>) -> Result<Settings, String> {
     let loaded = settings::load(path).map_err(|e| e.to_string())?;
     *current.lock().unwrap() = loaded.clone();
     Ok(loaded)
@@ -61,7 +61,10 @@ fn update_settings(
 // changed visibility) is reflected without extra plumbing.
 
 #[tauri::command]
-fn list_dir(state: tauri::State<'_, SettingsState>, path: String) -> Result<Vec<Entry>, NotebookError> {
+fn list_dir(
+    state: tauri::State<'_, SettingsState>,
+    path: String,
+) -> Result<Vec<Entry>, NotebookError> {
     list_dir_impl(&state.current.lock().unwrap(), &path)
 }
 
@@ -70,7 +73,10 @@ fn list_dir_impl(settings: &Settings, rel: &str) -> Result<Vec<Entry>, NotebookE
 }
 
 #[tauri::command]
-fn read_note(state: tauri::State<'_, SettingsState>, path: String) -> Result<String, NotebookError> {
+fn read_note(
+    state: tauri::State<'_, SettingsState>,
+    path: String,
+) -> Result<String, NotebookError> {
     read_note_impl(&state.current.lock().unwrap(), &path)
 }
 
@@ -249,7 +255,10 @@ mod tests {
         ));
 
         settings.notebook.path = Some(dir.path().to_string_lossy().into_owned());
-        assert_eq!(read_note_impl(&settings, "note.md").unwrap(), "# Hi\n\nbody");
+        assert_eq!(
+            read_note_impl(&settings, "note.md").unwrap(),
+            "# Hi\n\nbody"
+        );
     }
 
     #[test]
