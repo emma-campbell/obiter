@@ -26,8 +26,12 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # --ignore-scripts: CI doesn't run git hooks, so it doesn't need
+      # lefthook's build (and this pnpm errors on unapproved build scripts).
+      # Nothing runtime-critical is fetched via scripts — vite-plus ships
+      # prebuilt bindings — so the checks and tests run fine.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Format + lint
         run: pnpm exec vp check

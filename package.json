@@ -49,10 +49,5 @@
       "version": "11.13.1",
       "onFail": "download"
     }
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "lefthook"
-    ]
   }
 }
