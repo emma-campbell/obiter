@@ -1,7 +1,3 @@
-# lefthook ships a native binary via a build script; approve it so a fresh
-# `pnpm install` (e.g. CI) doesn't fail with ERR_PNPM_IGNORED_BUILDS.
-onlyBuiltDependencies:
-  - lefthook
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.2.4
   vite-plus: 0.2.4
