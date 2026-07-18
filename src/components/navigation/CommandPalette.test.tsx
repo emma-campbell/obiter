@@ -67,7 +67,7 @@ describe("CommandPalette note jump", () => {
   });
 
   it("debounces rapid typing into a single query", async () => {
-    const search = vi.fn(async () => HITS);
+    const search = vi.fn(async (_query: string) => HITS);
     render(<CommandPalette open items={COMMANDS} searchNotes={search} onOpenNote={() => {}} />);
 
     const input = screen.getByRole("textbox");

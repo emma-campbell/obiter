@@ -72,13 +72,18 @@ export function mount(
 ): NoteEditor {
   const { onState, onChange } = handlers;
   const { editable = true } = options;
-  const extensions = [defineBasicExtension(), defineActiveLine()];
-  if (!editable) extensions.push(defineReadonly());
-  // Doc-change fires for both typing and toolbar commands, so it's the
-  // right autosave trigger (dom "input" misses programmatic edits).
-  if (onChange) extensions.push(defineDocChangeHandler(() => onChange()));
+  // Pass the mark/command-contributing extensions as direct union args so
+  // their types infer (an intermediate Extension[] widens them to `never`).
+  // The optional extensions are plain (no marks/commands): readonly disables
+  // editing; doc-change fires the autosave trigger for typing and toolbar
+  // commands alike (dom "input" misses programmatic edits).
   const editor = createEditor({
-    extension: union(...extensions),
+    extension: union(
+      defineBasicExtension(),
+      defineActiveLine(),
+      ...(editable ? [] : [defineReadonly()]),
+      ...(onChange ? [defineDocChangeHandler(() => onChange())] : []),
+    ),
     defaultContent: mdToHtml(md),
   });
   editor.mount(el);

@@ -96,7 +96,7 @@ describe("FileTree (lazy)", () => {
   });
 
   it("does not re-list collapsed folders on focus", async () => {
-    const load = vi.fn((path: string) => {
+    const load = vi.fn((path: string): Promise<Entry[]> => {
       if (path === "")
         return Promise.resolve([{ name: "recipes", path: "recipes", kind: "folder" }]);
       return Promise.resolve([]);
