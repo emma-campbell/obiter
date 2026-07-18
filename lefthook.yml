@@ -14,3 +14,10 @@ pre-commit:
       run: pnpm exec tsc --noEmit
     cargo-check:
       run: cargo check --manifest-path src-tauri/Cargo.toml
+
+# Validate the commit message against Conventional Commits (see
+# commitlint.config.js). {1} is the path to the message file.
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
