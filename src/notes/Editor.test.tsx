@@ -1,27 +1,29 @@
 // @vitest-environment jsdom
-// The read-only note view: loads real contents via read_note and renders
-// them with editing disabled. ProseKit needs a real DOM (jsdom) but doesn't
-// fully lay out here; we assert on the loaded contents and the read-only
-// affordances, not on ProseMirror internals.
+// The editable note view: loads real contents via read_note and mounts an
+// editable editor with the formatting toolbar and a save-state indicator.
+// The autosave timing/write logic is covered directly in useAutosave.test;
+// here we assert the wiring — contents load, the toolbar renders, the
+// indicator shows, and the error state appears — not ProseMirror internals.
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { Editor } from "./Editor";
 
-function mockReadNote(bodyByPath: Record<string, string | Error>) {
-  const calls: string[] = [];
+function mockBackend(bodyByPath: Record<string, string | Error>) {
+  const reads: string[] = [];
   mockIPC((cmd, args) => {
     if (cmd === "read_note") {
       const path = (args as { path: string }).path;
-      calls.push(path);
+      reads.push(path);
       const body = bodyByPath[path];
       if (body instanceof Error) throw "io: no such file";
       return body ?? "";
     }
+    if (cmd === "write_note") return null; // autosave writes are a no-op here
     throw new Error(`unexpected command: ${cmd}`);
   });
-  return calls;
+  return reads;
 }
 
 afterEach(() => {
@@ -29,21 +31,24 @@ afterEach(() => {
   clearMocks();
 });
 
-describe("Editor (read-only)", () => {
-  it("loads the note's contents by path and shows the read-only hint", async () => {
-    const calls = mockReadNote({ "recipes/dumplings.md": "# Dumplings\n\nRest the dough." });
+describe("Editor (editable)", () => {
+  it("loads the note by path and mounts the editable toolbar + indicator", async () => {
+    const reads = mockBackend({ "recipes/dumplings.md": "# Dumplings\n\nRest the dough." });
     render(<Editor path="recipes/dumplings.md" />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Read-only preview/)).toBeTruthy();
+      expect(screen.getByLabelText("Bold")).toBeTruthy();
     });
-    expect(calls).toContain("recipes/dumplings.md");
-    // No save affordance and no formatting toolbar in read-only mode.
-    expect(screen.queryByLabelText("Bold")).toBeNull();
+    expect(reads).toContain("recipes/dumplings.md");
+    // Formatting toolbar is present now, and the read-only hint is gone.
+    expect(screen.getByLabelText("Inline code")).toBeTruthy();
+    expect(screen.queryByText(/Read-only preview/)).toBeNull();
+    // The save-state indicator starts clean.
+    expect(screen.getByText("saved")).toBeTruthy();
   });
 
   it("renders an error state when the note can't be read", async () => {
-    mockReadNote({ "gone.md": new Error("missing") });
+    mockBackend({ "gone.md": new Error("missing") });
     render(<Editor path="gone.md" />);
 
     await waitFor(() => {
@@ -52,11 +57,11 @@ describe("Editor (read-only)", () => {
   });
 
   it("reloads when the open path changes", async () => {
-    const calls = mockReadNote({ "a.md": "note a", "b.md": "note b" });
+    const reads = mockBackend({ "a.md": "note a", "b.md": "note b" });
     const { rerender } = render(<Editor path="a.md" />);
-    await waitFor(() => expect(calls).toContain("a.md"));
+    await waitFor(() => expect(reads).toContain("a.md"));
 
     rerender(<Editor path="b.md" />);
-    await waitFor(() => expect(calls).toContain("b.md"));
+    await waitFor(() => expect(reads).toContain("b.md"));
   });
 });

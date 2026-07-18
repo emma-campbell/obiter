@@ -6,7 +6,7 @@
 // markdown on save (getMarkdown).
 
 import { defineBasicExtension } from "prosekit/basic";
-import { createEditor, definePlugin, union } from "prosekit/core";
+import { createEditor, defineDocChangeHandler, definePlugin, union } from "prosekit/core";
 import { Plugin } from "prosekit/pm/state";
 import { defineActiveLine } from "./active-line";
 import { htmlToMd, mdToHtml } from "./markdown";
@@ -29,6 +29,8 @@ export interface EditorSnapshot {
 
 export interface NoteEditorHandlers {
   onState?: (snapshot: EditorSnapshot) => void;
+  /** Fires on every document change (typing and toolbar commands alike). */
+  onChange?: () => void;
 }
 
 export interface NoteEditor {
@@ -68,10 +70,13 @@ export function mount(
   handlers: NoteEditorHandlers = {},
   options: MountOptions = {},
 ): NoteEditor {
-  const { onState } = handlers;
+  const { onState, onChange } = handlers;
   const { editable = true } = options;
   const extensions = [defineBasicExtension(), defineActiveLine()];
   if (!editable) extensions.push(defineReadonly());
+  // Doc-change fires for both typing and toolbar commands, so it's the
+  // right autosave trigger (dom "input" misses programmatic edits).
+  if (onChange) extensions.push(defineDocChangeHandler(() => onChange()));
   const editor = createEditor({
     extension: union(...extensions),
     defaultContent: mdToHtml(md),

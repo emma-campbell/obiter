@@ -149,7 +149,10 @@ function RootLayout() {
 
 function NoteRoute() {
   const { _splat: splat } = noteRoute.useParams();
-  return <Editor path={splat ?? ""} />;
+  const path = splat ?? "";
+  // Key by path so switching notes remounts the editor — its unmount flushes
+  // the outgoing note's pending save before the next note loads.
+  return <Editor key={path} path={path} />;
 }
 
 /**
