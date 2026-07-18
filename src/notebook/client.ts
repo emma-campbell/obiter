@@ -14,6 +14,11 @@ export function readNote(path: string): Promise<string> {
   return invoke<string>("read_note", { path });
 }
 
+/** Write a note's markdown contents; creates the file if missing. */
+export function writeNote(path: string, contents: string): Promise<void> {
+  return invoke("write_note", { path, contents });
+}
+
 /** Find notes whose filename matches `query` (case-insensitive subsequence). */
 export function searchNotes(query: string): Promise<Entry[]> {
   return invoke<Entry[]>("search_notes", { query });

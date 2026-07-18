@@ -79,6 +79,19 @@ fn read_note_impl(settings: &Settings, rel: &str) -> Result<String, NotebookErro
 }
 
 #[tauri::command]
+fn write_note(
+    state: tauri::State<'_, SettingsState>,
+    path: String,
+    contents: String,
+) -> Result<(), NotebookError> {
+    write_note_impl(&state.current.lock().unwrap(), &path, &contents)
+}
+
+fn write_note_impl(settings: &Settings, rel: &str, contents: &str) -> Result<(), NotebookError> {
+    connected_notebook(settings)?.write_note(rel, contents)
+}
+
+#[tauri::command]
 fn search_notes(
     state: tauri::State<'_, SettingsState>,
     query: String,
@@ -156,7 +169,8 @@ pub fn run() {
             delete_api_key,
             list_dir,
             read_note,
-            search_notes
+            search_notes,
+            write_note
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -207,6 +221,20 @@ mod tests {
         let entries = list_dir_impl(&settings, "").unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "note.md");
+    }
+
+    #[test]
+    fn write_note_persists_via_the_connected_notebook_and_maps_not_connected() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut settings = Settings::default();
+        assert!(matches!(
+            write_note_impl(&settings, "note.md", "x"),
+            Err(NotebookError::NotConnected)
+        ));
+
+        settings.notebook.path = Some(dir.path().to_string_lossy().into_owned());
+        write_note_impl(&settings, "note.md", "hello").unwrap();
+        assert_eq!(read_note_impl(&settings, "note.md").unwrap(), "hello");
     }
 
     #[test]

@@ -187,6 +187,30 @@ impl Notebook {
         Ok(std::fs::read_to_string(file)?)
     }
 
+    /// Write a note's contents. Atomic (temp file in the same directory,
+    /// then rename), root-confined, and create-if-missing so recreating a
+    /// note deleted while open never loses the buffer. Does **not** create
+    /// missing parent directories — writing into a nonexistent folder is an
+    /// error, not a silent mkdir. This is the low-level write primitive the
+    /// editor's autosave and the future create-note flow both build on.
+    pub fn write_note(&self, rel: &str, contents: &str) -> Result<(), NotebookError> {
+        let root = self.canon_root()?;
+        let target = self.resolve_for_write(&root, rel)?;
+        let parent = target.parent().ok_or(NotebookError::OutsideRoot)?;
+        let file_name = target
+            .file_name()
+            .ok_or(NotebookError::OutsideRoot)?
+            .to_string_lossy();
+
+        // Temp lives in the target's own directory (same filesystem, so the
+        // rename is atomic) and is hidden, so a crash mid-write can't leave a
+        // stray file cluttering the note tree.
+        let tmp = parent.join(format!(".{file_name}.tmp"));
+        std::fs::write(&tmp, contents)?;
+        std::fs::rename(&tmp, &target)?;
+        Ok(())
+    }
+
     /// Canonicalized notebook root. A root that can't be canonicalized (or
     /// isn't a directory) is `Missing`, never a bare IO error.
     fn canon_root(&self) -> Result<PathBuf, NotebookError> {
@@ -216,6 +240,43 @@ impl Notebook {
         let target = canon_root.join(rel_path).canonicalize()?;
         if !target.starts_with(canon_root) {
             return Err(NotebookError::OutsideRoot);
+        }
+        Ok(target)
+    }
+
+    /// Like `resolve`, but for a target that may not exist yet. The target's
+    /// **parent** is canonicalized and confined (a missing parent surfaces as
+    /// an IO error — no directory is created); the filename is appended. If
+    /// the target already exists as a symlink escaping the root, it's
+    /// rejected, so an existing symlink can't be used to write outside.
+    fn resolve_for_write(&self, canon_root: &Path, rel: &str) -> Result<PathBuf, NotebookError> {
+        let rel_path = Path::new(rel);
+        let escapes = rel_path.components().any(|c| {
+            matches!(
+                c,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        });
+        if escapes {
+            return Err(NotebookError::OutsideRoot);
+        }
+
+        // Must name a file — the notebook root itself is not writable.
+        let file_name = rel_path.file_name().ok_or(NotebookError::OutsideRoot)?;
+        let parent_rel = rel_path.parent().unwrap_or_else(|| Path::new(""));
+        let parent = canon_root.join(parent_rel).canonicalize()?;
+        if !parent.starts_with(canon_root) {
+            return Err(NotebookError::OutsideRoot);
+        }
+
+        let target = parent.join(file_name);
+        // If the target already exists, resolve it fully to catch a symlink
+        // that points outside the notebook.
+        if let Ok(existing) = target.canonicalize() {
+            if !existing.starts_with(canon_root) {
+                return Err(NotebookError::OutsideRoot);
+            }
+            return Ok(existing);
         }
         Ok(target)
     }
@@ -487,6 +548,118 @@ mod tests {
     fn search_on_an_empty_notebook_finds_nothing() {
         let dir = tempfile::tempdir().unwrap();
         assert_eq!(notebook(dir.path()).search("anything").unwrap(), []);
+    }
+
+    #[test]
+    fn write_note_persists_contents_read_back_verbatim() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let nb = notebook(root);
+
+        nb.write_note("note.md", "# Hi\n\nbody\n").unwrap();
+        assert_eq!(nb.read_note("note.md").unwrap(), "# Hi\n\nbody\n");
+    }
+
+    #[test]
+    fn write_note_creates_a_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        assert!(!root.join("new.md").exists());
+
+        notebook(root).write_note("new.md", "fresh").unwrap();
+        assert_eq!(fs::read_to_string(root.join("new.md")).unwrap(), "fresh");
+    }
+
+    #[test]
+    fn write_note_overwrites_an_existing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::write(root.join("note.md"), "old").unwrap();
+
+        notebook(root).write_note("note.md", "new").unwrap();
+        assert_eq!(fs::read_to_string(root.join("note.md")).unwrap(), "new");
+    }
+
+    #[test]
+    fn write_note_is_atomic_and_leaves_no_temp_behind() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        notebook(root).write_note("note.md", "content").unwrap();
+
+        let entries: Vec<_> = fs::read_dir(root)
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        assert_eq!(entries, vec![std::ffi::OsString::from("note.md")]);
+    }
+
+    #[test]
+    fn write_note_into_a_missing_folder_errors_without_creating_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        let err = notebook(root).write_note("nope/note.md", "x").unwrap_err();
+        assert!(matches!(err, NotebookError::Io { .. }));
+        assert!(!root.join("nope").exists());
+    }
+
+    #[test]
+    fn write_note_rejects_paths_outside_the_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let nb = notebook(&root);
+
+        assert!(matches!(
+            nb.write_note("../escape.md", "x").unwrap_err(),
+            NotebookError::OutsideRoot
+        ));
+        assert!(matches!(
+            nb.write_note("/etc/passwd", "x").unwrap_err(),
+            NotebookError::OutsideRoot
+        ));
+        // The parent's sibling was never written.
+        assert!(!dir.path().join("escape.md").exists());
+    }
+
+    #[test]
+    fn write_note_rejects_writing_the_root_itself() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(matches!(
+            notebook(dir.path()).write_note("", "x").unwrap_err(),
+            NotebookError::OutsideRoot
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_note_does_not_write_through_a_symlink_escaping_the_root() {
+        use std::os::unix::fs::symlink;
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let outside = dir.path().join("outside.md");
+        fs::write(&outside, "original").unwrap();
+        // A note that is a symlink pointing outside the notebook.
+        symlink(&outside, root.join("link.md")).unwrap();
+
+        let err = notebook(&root).write_note("link.md", "hijacked").unwrap_err();
+        assert!(matches!(err, NotebookError::OutsideRoot));
+        // The outside file is untouched.
+        assert_eq!(fs::read_to_string(&outside).unwrap(), "original");
+    }
+
+    #[test]
+    fn write_note_can_recreate_a_note_deleted_while_open() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let nb = notebook(root);
+        nb.write_note("note.md", "v1").unwrap();
+        fs::remove_file(root.join("note.md")).unwrap(); // external delete
+
+        nb.write_note("note.md", "v2").unwrap();
+        assert_eq!(nb.read_note("note.md").unwrap(), "v2");
     }
 
     #[test]
