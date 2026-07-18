@@ -1,0 +1,16 @@
+# Pre-commit gate. Fast checks only — format, lint, typecheck, and a Rust
+# compile check. Tests run in CI, not here, so commits stay quick.
+# Installed automatically via the package.json "prepare" script on
+# `pnpm install`; run `pnpm exec lefthook install` to (re)activate manually.
+#
+# Note: `vp check` is format + lint (oxlint) only — it does NOT typecheck.
+# `tsc --noEmit` is a separate command so real type errors can't slip through.
+pre-commit:
+  parallel: true
+  commands:
+    check:
+      run: pnpm exec vp check
+    typecheck:
+      run: pnpm exec tsc --noEmit
+    cargo-check:
+      run: cargo check --manifest-path src-tauri/Cargo.toml
