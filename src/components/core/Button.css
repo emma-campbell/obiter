@@ -1,0 +1,70 @@
+/* Obiter Button — brand styling over Base UI's Button (ADR 0001).
+   Every interactive state is a CSS pseudo-class now; the old component tracked
+   hover in React state because inline styles can't express :hover. Variant and
+   size come in as data-attributes. Focus is the global :focus-visible pencil
+   ring from base.css. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--u-2);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* sizes */
+.btn[data-size="sm"] {
+  height: var(--control-sm);
+  min-width: var(--control-sm);
+  padding: 0 var(--u-2);
+  font-size: var(--text-small);
+}
+.btn[data-size="md"] {
+  height: var(--control);
+  min-width: var(--control);
+  padding: 0 var(--u-3);
+  font-size: var(--text-base);
+}
+
+/* variants — Ink on Paper is the one commit action; outline is the default. */
+.btn[data-variant="solid"] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.btn[data-variant="solid"]:hover:not(:disabled) {
+  background: var(--graphite);
+  border-color: var(--graphite);
+}
+.btn[data-variant="outline"] {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--border-color);
+}
+.btn[data-variant="outline"]:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+.btn[data-variant="ghost"] {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+.btn[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
