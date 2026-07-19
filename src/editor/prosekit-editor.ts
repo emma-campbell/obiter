@@ -7,6 +7,7 @@
 
 import { defineBasicExtension } from "prosekit/basic";
 import { createEditor, defineDocChangeHandler, definePlugin, union } from "prosekit/core";
+import { ListDOMSerializer } from "prosekit/extensions/list";
 import { Plugin } from "prosekit/pm/state";
 import { defineActiveLine } from "./active-line";
 import { htmlToMd, mdToHtml } from "./markdown";
@@ -41,6 +42,48 @@ export interface NoteEditor {
   toggleLink: () => void;
   getMarkdown: () => string;
   destroy: () => void;
+}
+
+// Serializing the note back to markdown does NOT read the editor's rendered
+// innerHTML. ProseKit stores lists as flat-list nodes that render as
+// <div class="prosemirror-flat-list"> — markup rehype-remark doesn't recognize
+// as a list, so reading innerHTML silently turns every list into loose
+// paragraphs (and mangles task checkboxes into literal "[x]" text). Instead the
+// doc is serialized through ListDOMSerializer, which re-emits native <ul>/<ol>,
+// then two DOM fixups make the result faithful GFM before it reaches htmlToMd.
+
+/**
+ * Unwrap a list item's lone leading <p> into inline content so remark
+ * serializes it as a TIGHT item. Flat-list content is always a paragraph, so
+ * without this every list round-trips loose (a blank line between each item).
+ * Items with two or more paragraphs are genuinely loose and left untouched.
+ * Tightness isn't recorded in the flat-list schema, so an intentionally-loose
+ * single-paragraph list normalizes to tight — an accepted trade-off.
+ */
+function tightenListItems(root: HTMLElement): void {
+  for (const li of Array.from(root.querySelectorAll("li"))) {
+    const paragraphs = Array.from(li.children).filter((c) => c.tagName === "P");
+    if (paragraphs.length === 1 && li.firstElementChild === paragraphs[0]) {
+      const p = paragraphs[0];
+      while (p.firstChild) li.insertBefore(p.firstChild, p);
+      p.remove();
+    }
+  }
+}
+
+/**
+ * Give GFM task items the leading <input type="checkbox"> that remark needs to
+ * emit "- [ ]" / "- [x]". ListDOMSerializer carries the state as
+ * data-list-kind / data-list-checked attributes; this translates them. Runs
+ * after tightening so the checkbox lands ahead of the now-inline content.
+ */
+function addTaskCheckboxes(root: HTMLElement): void {
+  for (const li of Array.from(root.querySelectorAll('li[data-list-kind="task"]'))) {
+    const input = document.createElement("input");
+    input.setAttribute("type", "checkbox");
+    if (li.hasAttribute("data-list-checked")) input.setAttribute("checked", "");
+    li.insertBefore(input, li.firstChild);
+  }
 }
 
 const safe = (fn: () => boolean): boolean => {
@@ -134,7 +177,14 @@ export function mount(
       focus();
       emit();
     },
-    getMarkdown: () => htmlToMd(dom.innerHTML),
+    getMarkdown: () => {
+      const serializer = ListDOMSerializer.fromSchema(editor.schema);
+      const box = document.createElement("div");
+      box.appendChild(serializer.serializeFragment(editor.state.doc.content, { document }));
+      tightenListItems(box);
+      addTaskCheckboxes(box);
+      return htmlToMd(box.innerHTML);
+    },
     destroy: () => {
       clearTimeout(t);
       dom.removeEventListener("input", onInput);
