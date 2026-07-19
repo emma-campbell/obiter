@@ -98,22 +98,35 @@ afterEach(() => {
   clearMocks();
 });
 
+// Drive a Base UI Select: open its trigger, then commit an option via the
+// pointer sequence Base UI listens for (a bare click doesn't select).
+function chooseOption(triggerLabel: string, optionName: string) {
+  fireEvent.click(screen.getByLabelText(triggerLabel));
+  const option = screen.getByRole("option", { name: optionName });
+  fireEvent.pointerDown(option);
+  fireEvent.pointerUp(option);
+  fireEvent.click(option);
+}
+
+// The Select trigger displays the selected option's label.
+function selectedLabel(triggerLabel: string): string {
+  return screen.getByLabelText(triggerLabel).textContent ?? "";
+}
+
 describe("Settings modal", () => {
   it("applies a control change straight to the backend", async () => {
     const { store, calls } = mockBackend(testSettings());
     renderSettings();
     await settled();
 
-    fireEvent.change(screen.getByLabelText("Delete behavior"), {
-      target: { value: "permanent" },
-    });
+    chooseOption("Delete behavior", "Delete permanently");
 
     await waitFor(() => {
       expect(store.settings.notebook.delete).toBe("permanent");
     });
     expect(calls.some((c) => c.cmd === "update_settings")).toBe(true);
     // The control now reads the persisted value back from the provider.
-    expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe("permanent");
+    expect(selectedLabel("Delete behavior")).toContain("Delete permanently");
   });
 
   it("commits text inputs on Enter, not per keystroke", async () => {
@@ -148,9 +161,7 @@ describe("Settings modal", () => {
     await settled();
 
     fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
-    const theme = screen.getByLabelText("Theme");
-
-    fireEvent.change(theme, { target: { value: "dark" } });
+    chooseOption("Theme", "Dark");
     await waitFor(() => {
       expect(store.settings.appearance.theme).toBe("dark");
     });
@@ -239,9 +250,7 @@ describe("Settings modal", () => {
     // from the select's re-render, so wait on it too rather than assuming
     // both flush in the same tick.
     await waitFor(() => {
-      expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe(
-        "permanent",
-      );
+      expect(selectedLabel("Delete behavior")).toContain("Delete permanently");
       expect((screen.getByLabelText("Daily note filename format") as HTMLInputElement).value).toBe(
         "DD-MM-YYYY",
       );
@@ -263,7 +272,7 @@ describe("Settings modal", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("key must be a string");
     // Controls still show the in-memory settings.
-    expect((screen.getByLabelText("Delete behavior") as HTMLSelectElement).value).toBe("trash");
+    expect(selectedLabel("Delete behavior")).toContain("Move to system trash");
 
     // Dismissing returns the modal to normal.
     fireEvent.click(screen.getByRole("button", { name: "Dismiss reload error" }));
@@ -276,17 +285,16 @@ describe("Settings modal", () => {
     await settled();
 
     fireEvent.click(screen.getByRole("tab", { name: "AI" }));
-    const model = screen.getByLabelText("Model") as HTMLSelectElement;
-    expect(model.value).toBe("claude-opus-4-8");
+    expect(selectedLabel("Model")).toContain("claude-opus-4-8");
 
     // Curated pick persists directly.
-    fireEvent.change(model, { target: { value: "claude-haiku-4-5" } });
+    chooseOption("Model", "claude-haiku-4-5");
     await waitFor(() => {
       expect(store.settings.ai.model).toBe("claude-haiku-4-5");
     });
 
     // "Other…" reveals a free-text input; committing persists the id.
-    fireEvent.change(model, { target: { value: "__custom__" } });
+    chooseOption("Model", "Other…");
     const custom = screen.getByLabelText("Custom model id");
     fireEvent.change(custom, { target: { value: "claude-fable-5" } });
     fireEvent.keyDown(custom, { key: "Enter" });
