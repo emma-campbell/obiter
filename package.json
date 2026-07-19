@@ -11,6 +11,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/public-sans": "^5.2.7",
     "@tanstack/react-router": "^1.170.18",

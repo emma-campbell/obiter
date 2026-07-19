@@ -1,0 +1,97 @@
+/* Obiter Toast — brand styling over Base UI's Toast parts (ADR 0001).
+   Base UI ships the behaviour and structure unstyled; the ink-on-paper look
+   lives here, keyed off part classNames and the [data-*] state attributes Base
+   UI sets. Values reference the design tokens — nothing hard-coded that a token
+   already names. */
+
+/* The stack, pinned bottom-center. No shadow — floating surfaces get a border. */
+.toast-viewport {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+/* One toast — the hairline bar. */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  background: var(--paper);
+  border: 1px solid var(--ash);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+.toast[data-tone="danger"] {
+  border-color: var(--danger);
+}
+
+/* Base UI stamps these while the toast animates in/out — fade + a small rise. */
+.toast[data-starting-style],
+.toast[data-ending-style] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.toast__content {
+  flex: 1;
+  min-width: 0;
+}
+.toast__desc {
+  margin: 0;
+}
+.toast__code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* Action button — the outline Button reduced to fit the bar. */
+.toast__action {
+  flex: 0 0 auto;
+  height: var(--control-sm);
+  padding: 0 var(--u-2);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.toast__action:hover {
+  background: var(--bg-subtle);
+}
+
+/* Dismiss — a ghost square. */
+.toast__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.toast__close:hover {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
