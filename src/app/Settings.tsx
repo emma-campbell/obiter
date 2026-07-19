@@ -11,6 +11,7 @@ import { RotateCw, X } from "lucide-react";
 import { Button } from "../components/core/Button";
 import { Icon } from "../components/core/Icon";
 import { Input } from "../components/core/Input";
+import { Switch } from "../components/core/Switch";
 import { useChooseFolder } from "../notebook/useChooseFolder";
 import { useSettings } from "../settings/SettingsProvider";
 import { deleteApiKey, hasApiKey, setApiKey } from "../settings/secrets";
@@ -418,30 +419,20 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                       }));
                     }}
                   />
-                  <label
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      fontSize: 14,
-                      color: "var(--graphite)",
-                    }}
+                  <Switch
+                    checked={settings.notebook.files.showHidden}
+                    onCheckedChange={(showHidden) =>
+                      patch((s) => ({
+                        ...s,
+                        notebook: {
+                          ...s.notebook,
+                          files: { ...s.notebook.files, showHidden },
+                        },
+                      }))
+                    }
                   >
-                    <input
-                      type="checkbox"
-                      checked={settings.notebook.files.showHidden}
-                      onChange={(e) =>
-                        patch((s) => ({
-                          ...s,
-                          notebook: {
-                            ...s.notebook,
-                            files: { ...s.notebook.files, showHidden: e.target.checked },
-                          },
-                        }))
-                      }
-                    />
                     Show hidden files
-                  </label>
+                  </Switch>
                 </div>
               </Row>
               <Row
@@ -532,24 +523,12 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                 label="AI features"
                 hint="Off means off — a plain notes app that talks to nothing."
               >
-                <label
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    fontSize: 14,
-                    color: "var(--graphite)",
-                  }}
+                <Switch
+                  checked={settings.ai.enabled}
+                  onCheckedChange={(enabled) => patch((s) => ({ ...s, ai: { ...s.ai, enabled } }))}
                 >
-                  <input
-                    type="checkbox"
-                    checked={settings.ai.enabled}
-                    onChange={(e) =>
-                      patch((s) => ({ ...s, ai: { ...s.ai, enabled: e.target.checked } }))
-                    }
-                  />
                   Enable AI features
-                </label>
+                </Switch>
               </Row>
               <Row label="Provider">
                 <select

@@ -1,0 +1,50 @@
+/* Obiter Switch — brand styling over Base UI's Switch (ADR 0001). Track and
+   thumb keyed off Base UI's [data-checked] state; focus is the global
+   :focus-visible pencil ring. */
+
+.switch-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.switch-field__label {
+  font-size: 14px;
+  color: var(--graphite);
+  cursor: pointer;
+}
+
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.switch[data-checked] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.switch__thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--paper);
+  transform: translateX(2px);
+  transition: transform 120ms ease;
+}
+.switch[data-checked] .switch__thumb {
+  transform: translateX(16px);
+}
