@@ -114,6 +114,26 @@ function selectedLabel(triggerLabel: string): string {
 }
 
 describe("Settings modal", () => {
+  it("closes on Escape (Base UI Dialog owns it now)", async () => {
+    let closed = false;
+    mockBackend(testSettings());
+    renderSettings({ onClose: () => (closed = true) });
+    await settled();
+
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), { key: "Escape" });
+    expect(closed).toBe(true);
+  });
+
+  it("closes when the close button is pressed", async () => {
+    let closed = false;
+    mockBackend(testSettings());
+    renderSettings({ onClose: () => (closed = true) });
+    await settled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close settings" }));
+    expect(closed).toBe(true);
+  });
+
   it("applies a control change straight to the backend", async () => {
     const { store, calls } = mockBackend(testSettings());
     renderSettings();
