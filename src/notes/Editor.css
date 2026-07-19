@@ -116,6 +116,10 @@
 .obiter-pm p {
   margin: 0 0 14px;
 }
+/* Lists are ProseKit flat-list: each item is a <div class="prosemirror-flat-list"
+   data-list-kind="…"> with a .list-marker (drawn by prosekit/basic/style.css)
+   and a .list-content child. The bare ul/ol/li rules below are a fallback for
+   any non-flat-list markup; the flat-list rules are what the live editor uses. */
 .obiter-pm ul,
 .obiter-pm ol {
   padding-left: 1.2em;
@@ -127,6 +131,45 @@
 }
 .obiter-pm li p {
   margin: 0;
+}
+.obiter-pm .prosemirror-flat-list {
+  margin: 0 0 6px;
+}
+.obiter-pm .list-content {
+  color: var(--graphite);
+}
+.obiter-pm .list-content > p {
+  margin: 0;
+}
+/* Markers a shade lighter than body ink — the mark, not the point. */
+.obiter-pm .list-marker {
+  color: var(--slate);
+}
+/* Task checkbox: brand the accent and keep it clickable-looking. */
+.obiter-pm [data-list-kind="task"] > .list-marker input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* --- tables (GFM) --- */
+/* prosekit/basic/style.css owns border-collapse, fixed layout, full width, and
+   a .tableWrapper scroll box. It sets border-width:1px but no style/color, so
+   the hairlines and header emphasis are ours. */
+.obiter-pm table {
+  margin: 0 0 14px;
+}
+.obiter-pm th,
+.obiter-pm td {
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.obiter-pm th {
+  background: var(--bg-subtle);
+  font-weight: var(--weight-medium);
+  color: var(--ink);
 }
 .obiter-pm blockquote {
   margin: 0 0 14px;
