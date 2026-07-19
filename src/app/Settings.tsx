@@ -11,6 +11,7 @@ import { RotateCw, X } from "lucide-react";
 import { Button } from "../components/core/Button";
 import { Icon } from "../components/core/Icon";
 import { Input } from "../components/core/Input";
+import { Select } from "../components/core/Select";
 import { Switch } from "../components/core/Switch";
 import { useChooseFolder } from "../notebook/useChooseFolder";
 import { useSettings } from "../settings/SettingsProvider";
@@ -56,17 +57,6 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
     </div>
   );
 }
-
-const selectStyle: CSSProperties = {
-  height: "var(--control)",
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-base)",
-  color: "var(--text-body)",
-  background: "var(--bg)",
-  border: "1px solid var(--border-color)",
-  borderRadius: "var(--radius)",
-  padding: "0 var(--u-2)",
-};
 
 /**
  * Text input that applies on blur/Enter rather than per keystroke, so a
@@ -384,20 +374,17 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                 label="Deleting notes"
                 hint="Trash is recoverable. Permanent deletion is exactly that."
               >
-                <select
-                  style={selectStyle}
+                <Select
                   aria-label="Delete behavior"
                   value={settings.notebook.delete}
-                  onChange={(e) =>
-                    patch((s) => ({
-                      ...s,
-                      notebook: { ...s.notebook, delete: e.target.value as "trash" | "permanent" },
-                    }))
+                  onValueChange={(del) =>
+                    patch((s) => ({ ...s, notebook: { ...s.notebook, delete: del } }))
                   }
-                >
-                  <option value="trash">Move to system trash</option>
-                  <option value="permanent">Delete permanently</option>
-                </select>
+                  options={[
+                    { value: "trash", label: "Move to system trash" },
+                    { value: "permanent", label: "Delete permanently" },
+                  ]}
+                />
               </Row>
               <Row
                 label="Visible files"
@@ -470,24 +457,18 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                   label="Theme"
                   hint="System follows your OS. Enabled by the darkMode flag in settings.json."
                 >
-                  <select
-                    style={selectStyle}
+                  <Select
                     aria-label="Theme"
                     value={settings.appearance.theme}
-                    onChange={(e) =>
-                      patch((s) => ({
-                        ...s,
-                        appearance: {
-                          ...s.appearance,
-                          theme: e.target.value as "light" | "dark" | "system",
-                        },
-                      }))
+                    onValueChange={(theme) =>
+                      patch((s) => ({ ...s, appearance: { ...s.appearance, theme } }))
                     }
-                  >
-                    <option value="system">System</option>
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                  </select>
+                    options={[
+                      { value: "system", label: "System" },
+                      { value: "light", label: "Light" },
+                      { value: "dark", label: "Dark" },
+                    ]}
+                  />
                 </Row>
               )}
               <Row label="Editor font size" hint="The prose size in the editor, in pixels.">
@@ -531,47 +512,33 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
                 </Switch>
               </Row>
               <Row label="Provider">
-                <select
-                  style={selectStyle}
+                <Select
                   aria-label="AI provider"
                   value={settings.ai.provider}
-                  onChange={(e) =>
-                    patch((s) => ({
-                      ...s,
-                      ai: { ...s.ai, provider: e.target.value as AiProvider },
-                    }))
-                  }
-                >
-                  {Object.entries(PROVIDER_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(provider) => patch((s) => ({ ...s, ai: { ...s.ai, provider } }))}
+                  options={(Object.entries(PROVIDER_LABELS) as [AiProvider, string][]).map(
+                    ([value, label]) => ({ value, label }),
+                  )}
+                />
               </Row>
               <Row label="Model">
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <select
-                    style={selectStyle}
+                  <Select
                     aria-label="Model"
                     value={showCustomModel ? "__custom__" : settings.ai.model}
-                    onChange={(e) => {
-                      if (e.target.value === "__custom__") {
+                    onValueChange={(model) => {
+                      if (model === "__custom__") {
                         setCustomModel(true);
                         return;
                       }
                       setCustomModel(false);
-                      const model = e.target.value;
                       patch((s) => ({ ...s, ai: { ...s.ai, model } }));
                     }}
-                  >
-                    {CURATED_MODELS[settings.ai.provider].map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                    <option value="__custom__">Other…</option>
-                  </select>
+                    options={[
+                      ...CURATED_MODELS[settings.ai.provider].map((m) => ({ value: m, label: m })),
+                      { value: "__custom__", label: "Other…" },
+                    ]}
+                  />
                   {showCustomModel && (
                     <CommitInput
                       mono

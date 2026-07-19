@@ -1,0 +1,75 @@
+/* Obiter Select — brand styling over Base UI's Select (ADR 0001). The trigger
+   matches the app's inputs (hairline, pencil focus ring via base.css); the
+   popup is a bordered menu, no shadow. Item states key off Base UI's
+   [data-highlighted] (keyboard/pointer active) and [data-selected]. */
+
+.select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--u-2);
+  height: var(--control);
+  min-width: 180px;
+  padding: 0 var(--u-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-body);
+  background: var(--bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.select__value {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select__icon {
+  display: inline-flex;
+  color: var(--text-subtle);
+}
+
+/* popup */
+.select__positioner {
+  z-index: 25;
+}
+.select__popup {
+  min-width: var(--anchor-width, 180px);
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--ash);
+  border-radius: var(--radius);
+  max-height: min(320px, var(--available-height));
+  overflow-y: auto;
+}
+.select__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--control-sm);
+  padding: 0 8px;
+  border-radius: 2px;
+  font-size: 14px;
+  color: var(--graphite);
+  cursor: pointer;
+  user-select: none;
+}
+.select__item[data-highlighted] {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
+.select__item[data-selected] {
+  color: var(--ink);
+}
+.select__item-text {
+  flex: 1;
+}
+.select__item-indicator {
+  display: inline-flex;
+  color: var(--accent);
+}
