@@ -14,6 +14,13 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/400-italic.css";
 
+// ProseKit's flat-list draws its own markers (bullets, numbers, task
+// checkboxes) via .list-marker elements — native list-style is switched off —
+// and this stylesheet is where those markers, plus the base table structure,
+// live. Without it lists render markerless. Loaded before index.css and
+// Editor.css so the brand tokens and prose overrides win the cascade.
+import "prosekit/basic/style.css";
+
 import "./styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
