@@ -1,10 +1,6 @@
-import { useState } from "react";
-import type { CSSProperties, InputHTMLAttributes } from "react";
-
-const SIZES: Record<"sm" | "md", CSSProperties> = {
-  sm: { height: "var(--control-sm)", fontSize: "var(--text-small)", padding: "0 var(--u-2)" },
-  md: { height: "var(--control)", fontSize: "var(--text-base)", padding: "0 var(--u-2)" },
-};
+import type { InputHTMLAttributes } from "react";
+import { Input as BaseInput } from "@base-ui/react/input";
+import "./Input.css";
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   size?: "sm" | "md";
@@ -16,49 +12,22 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 /**
  * Obiter text Input. One hairline, no fill. Focus is a 2px Pencil ring — a
  * keyboard-first tool that hides focus is lying about being keyboard-first.
+ * Runs on Base UI's Input (ADR 0001); focus/hover/invalid are CSS states now
+ * (the look lives in Input.css) rather than tracked in React.
  */
 export function Input({
   size = "md",
   mono = false,
   invalid = false,
-  disabled = false,
-  style,
+  className,
   ...rest
 }: InputProps) {
-  const [focus, setFocus] = useState(false);
-  const [hover, setHover] = useState(false);
-  const borderColor = invalid
-    ? "var(--danger)"
-    : focus
-      ? "var(--pencil-500)"
-      : hover
-        ? "var(--border-emphasized)"
-        : "var(--border-color)";
-  const base: CSSProperties = {
-    width: "100%",
-    boxSizing: "border-box",
-    fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
-    color: "var(--text-body)",
-    background: "var(--bg)",
-    border: `1px solid ${borderColor}`,
-    borderRadius: "var(--radius)",
-    outline: focus ? "2px solid var(--pencil-500)" : "none",
-    outlineOffset: 0,
-    opacity: disabled ? 0.4 : 1,
-    cursor: disabled ? "not-allowed" : "text",
-    transition: "border-color 120ms ease",
-    ...SIZES[size],
-    ...style,
-  };
   return (
-    <input
-      disabled={disabled}
+    <BaseInput
+      className={className ? `input ${className}` : "input"}
+      data-size={size}
+      data-mono={mono || undefined}
       aria-invalid={invalid || undefined}
-      style={base}
-      onFocus={() => setFocus(true)}
-      onBlur={() => setFocus(false)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       {...rest}
     />
   );

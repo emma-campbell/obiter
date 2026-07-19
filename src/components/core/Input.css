@@ -1,0 +1,47 @@
+/* Obiter Input — brand styling over Base UI's Input (ADR 0001). Focus, hover,
+   and invalid are CSS states now; the old component tracked focus and hover in
+   React because inline styles can't express them. The 2px pencil focus ring is
+   the global :focus-visible rule from base.css. */
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background: var(--bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  cursor: text;
+  transition: border-color 120ms ease;
+}
+.input::placeholder {
+  color: var(--slate);
+}
+.input[data-mono] {
+  font-family: var(--font-mono);
+}
+
+.input[data-size="sm"] {
+  height: var(--control-sm);
+  padding: 0 var(--u-2);
+  font-size: var(--text-small);
+}
+.input[data-size="md"] {
+  height: var(--control);
+  padding: 0 var(--u-2);
+  font-size: var(--text-base);
+}
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-emphasized);
+}
+.input:focus {
+  border-color: var(--pencil-500);
+}
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
