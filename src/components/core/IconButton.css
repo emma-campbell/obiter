@@ -1,0 +1,37 @@
+/* Obiter IconButton — the ghost button reduced to a square (ADR 0001).
+   Hover is now CSS; the pressed/selected state is driven by aria-pressed so the
+   toggle styling and the accessibility signal are one and the same. */
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.icon-btn[data-size="sm"] {
+  width: var(--control-sm);
+  height: var(--control-sm);
+}
+.icon-btn[data-size="md"] {
+  width: var(--control);
+  height: var(--control);
+}
+
+.icon-btn:hover:not(:disabled),
+.icon-btn[aria-pressed="true"] {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
