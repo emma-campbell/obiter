@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Toolbar } from "@base-ui/react/toolbar";
 import { Bold, Code, Italic, Link, List } from "lucide-react";
 import { IconButton } from "../components/core/IconButton";
 import { joinFrontmatter, splitFrontmatter } from "../editor/markdown";
@@ -126,44 +127,64 @@ export function Editor({ path }: EditorProps) {
 
   return (
     <div className="editor">
-      <div className="editor__toolbar">
-        <IconButton
-          icon={Bold}
-          aria-label="Bold"
-          size="sm"
-          active={active.bold}
-          onClick={() => pmRef.current?.toggleBold()}
+      <Toolbar.Root className="editor__toolbar" aria-label="Formatting">
+        <Toolbar.Button
+          render={
+            <IconButton
+              icon={Bold}
+              aria-label="Bold"
+              size="sm"
+              active={active.bold}
+              onClick={() => pmRef.current?.toggleBold()}
+            />
+          }
         />
-        <IconButton
-          icon={Italic}
-          aria-label="Italic"
-          size="sm"
-          active={active.italic}
-          onClick={() => pmRef.current?.toggleItalic()}
+        <Toolbar.Button
+          render={
+            <IconButton
+              icon={Italic}
+              aria-label="Italic"
+              size="sm"
+              active={active.italic}
+              onClick={() => pmRef.current?.toggleItalic()}
+            />
+          }
         />
-        <IconButton
-          icon={Code}
-          aria-label="Inline code"
-          size="sm"
-          active={active.code}
-          onClick={() => pmRef.current?.toggleCode()}
+        <Toolbar.Button
+          render={
+            <IconButton
+              icon={Code}
+              aria-label="Inline code"
+              size="sm"
+              active={active.code}
+              onClick={() => pmRef.current?.toggleCode()}
+            />
+          }
         />
-        <IconButton
-          icon={List}
-          aria-label="Bullet list"
-          size="sm"
-          onClick={() => pmRef.current?.toggleList()}
+        <Toolbar.Button
+          render={
+            <IconButton
+              icon={List}
+              aria-label="Bullet list"
+              size="sm"
+              onClick={() => pmRef.current?.toggleList()}
+            />
+          }
         />
-        <IconButton
-          icon={Link}
-          aria-label="Link"
-          size="sm"
-          onClick={() => pmRef.current?.toggleLink()}
+        <Toolbar.Button
+          render={
+            <IconButton
+              icon={Link}
+              aria-label="Link"
+              size="sm"
+              onClick={() => pmRef.current?.toggleLink()}
+            />
+          }
         />
         <div className="editor__toolbar-right">
           <span className="editor__words">{words} words</span>
         </div>
-      </div>
+      </Toolbar.Root>
 
       <div className="editor__scroll">
         <div ref={mountRef} className="editor__mount obiter-pm" />
