@@ -1,0 +1,122 @@
+/* Command palette — Base UI Autocomplete inside a centered modal card (ADR
+   0001). Base UI owns the input/listbox roles, keyboard navigation, and
+   active-descendant highlight; the ink-on-paper look and the section layout
+   live here. Highlight keys off Base UI's [data-highlighted] on the option. */
+
+.palette-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 27, 24, 0.18);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 96px;
+  z-index: 30;
+}
+.palette {
+  width: 540px;
+  max-width: 90%;
+  background: var(--paper);
+  border: 1px solid var(--ash);
+  border-radius: var(--radius-lg);
+}
+
+.palette__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--chalk);
+}
+.palette__search-icon {
+  display: inline-flex;
+  color: var(--slate);
+}
+.palette__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.palette__list {
+  max-height: 320px;
+  overflow-y: auto;
+  /* Never scroll sideways — long labels/paths truncate instead (see below). */
+  overflow-x: hidden;
+  padding: 6px;
+}
+.palette__empty {
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--slate);
+}
+.palette__section {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--slate);
+  padding: 8px 10px 4px;
+}
+
+.palette__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.palette__item[data-highlighted] {
+  background: var(--bg-subtle);
+}
+.palette__item-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--slate);
+}
+.palette__item[data-highlighted] .palette__item-icon {
+  color: var(--pencil-600);
+}
+/* Label takes the free space and truncates — one line per row, so the modal
+   height doesn't lurch as results change. */
+.palette__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.palette__label--mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.palette__hint {
+  flex: 0 0 auto;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate);
+}
+.palette__shortcut {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}

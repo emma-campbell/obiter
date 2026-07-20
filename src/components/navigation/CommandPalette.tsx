@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Autocomplete } from "@base-ui/react/autocomplete";
 import type { LucideIcon } from "lucide-react";
 import { CornerDownLeft, FileText, Search } from "lucide-react";
 import type { Entry } from "../../notebook/notebook";
 import { Icon } from "../core/Icon";
 import { Kbd } from "../core/Kbd";
+import "./CommandPalette.css";
 
 export interface PaletteItem {
   id: string;
@@ -37,8 +39,11 @@ function dirOf(path: string): string {
 
 /**
  * A full command palette: runnable actions and note-jump in one list, filtered
- * by a single query, driven by the keyboard. Plain and sectioned — no scores
- * shown, no urgency. Pair it with the FileTree: tree for structure, this for speed.
+ * by a single query. Runs on Base UI's Autocomplete (ADR 0001) in `none` mode —
+ * Base UI owns the combobox/listbox roles, arrow-key navigation, active-
+ * descendant highlight, and Enter/Escape; the filtering stays ours (commands
+ * matched client-side, notes fetched from the backend), so we feed it the items
+ * to show. Plain and sectioned — no scores, no urgency.
  */
 export function CommandPalette({
   open,
@@ -49,18 +54,7 @@ export function CommandPalette({
   onOpenNote,
 }: CommandPaletteProps) {
   const [q, setQ] = useState("");
-  const [active, setActive] = useState(0);
   const [noteHits, setNoteHits] = useState<Entry[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      setQ("");
-      setActive(0);
-      setNoteHits([]);
-      setTimeout(() => inputRef.current?.focus(), 0);
-    }
-  }, [open]);
 
   // Note search runs against the backend (debounced), not the static items —
   // the backend already filtered, so its results are shown as-is.
@@ -100,37 +94,6 @@ export function CommandPalette({
     return [...commands, ...notes];
   }, [q, items, noteHits, onOpenNote]);
 
-  useEffect(() => {
-    setActive((a) => Math.min(a, Math.max(0, filtered.length - 1)));
-  }, [filtered.length]);
-
-  useEffect(() => {
-    if (!open) return;
-    const run = (it?: PaletteItem) => {
-      if (it) {
-        it.run?.();
-        onClose?.();
-      }
-    };
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActive((a) => Math.min(a + 1, filtered.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActive((a) => Math.max(a - 1, 0));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        run(filtered[active]);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        onClose?.();
-      }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [open, filtered, active, onClose]);
-
   if (!open) return null;
 
   const runItem = (it: PaletteItem) => {
@@ -141,151 +104,72 @@ export function CommandPalette({
   // Section order = order of first appearance.
   const sections: string[] = [];
   for (const it of filtered) {
-    const s = it.section ?? "Commands";
-    if (!sections.includes(s)) sections.push(s);
+    const sec = it.section ?? "Commands";
+    if (!sections.includes(sec)) sections.push(sec);
   }
-  let flat = -1;
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(28,27,24,0.18)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: 96,
-        zIndex: 30,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 540,
-          maxWidth: "90%",
-          background: "var(--paper)",
-          border: "1px solid var(--ash)",
-          borderRadius: "var(--radius-lg)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "12px 14px",
-            borderBottom: "1px solid var(--chalk)",
+    <div className="palette-overlay" onClick={onClose}>
+      <div className="palette" onClick={(e) => e.stopPropagation()}>
+        <Autocomplete.Root
+          items={filtered.map((it) => it.id)}
+          mode="none"
+          open
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) onClose?.();
           }}
+          value={q}
+          onValueChange={(value) => setQ(value)}
         >
-          <Icon icon={Search} size={16} style={{ color: "var(--slate)" }} />
-          <input
-            ref={inputRef}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={placeholder}
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              fontFamily: "var(--font-sans)",
-              fontSize: 15,
-              color: "var(--ink)",
-            }}
-          />
-          <Kbd>Esc</Kbd>
-        </div>
-        <div style={{ maxHeight: 320, overflow: "auto", padding: 6 }}>
-          {filtered.length === 0 && (
-            <div
-              style={{
-                padding: 14,
-                fontFamily: "var(--font-mono)",
-                fontSize: 12.5,
-                color: "var(--slate)",
-              }}
-            >
-              Nothing matches. Enter creates {q || "a note"}.md
-            </div>
-          )}
-          {sections.map((sec) => (
-            <div key={sec}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  color: "var(--slate)",
-                  padding: "8px 10px 4px",
-                }}
-              >
-                {sec}
+          <div className="palette__header">
+            <Icon icon={Search} size={16} className="palette__search-icon" />
+            <Autocomplete.Input autoFocus placeholder={placeholder} className="palette__input" />
+            <Kbd>Esc</Kbd>
+          </div>
+          <Autocomplete.List className="palette__list">
+            {filtered.length === 0 && (
+              <div className="palette__empty">
+                Nothing matches. Enter creates {q || "a note"}.md
               </div>
-              {filtered
-                .filter((it) => (it.section ?? "Commands") === sec)
-                .map((it) => {
-                  flat += 1;
-                  const on = flat === active;
-                  const idx = flat;
-                  return (
-                    <button
-                      type="button"
+            )}
+            {sections.map((sec) => (
+              <div key={sec}>
+                <div className="palette__section">{sec}</div>
+                {filtered
+                  .filter((it) => (it.section ?? "Commands") === sec)
+                  .map((it) => (
+                    <Autocomplete.Item
                       key={it.id}
-                      onMouseEnter={() => setActive(idx)}
+                      value={it.id}
+                      className="palette__item"
                       onClick={() => runItem(it)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        width: "100%",
-                        textAlign: "left",
-                        border: "none",
-                        background: on ? "var(--bg-subtle)" : "transparent",
-                        borderRadius: "var(--radius)",
-                        padding: "9px 10px",
-                        cursor: "pointer",
-                        color: "var(--ink)",
-                      }}
                     >
                       <Icon
                         icon={it.icon ?? CornerDownLeft}
                         size={15}
-                        style={{ color: on ? "var(--pencil-600)" : "var(--slate)" }}
+                        className="palette__item-icon"
                       />
                       <span
-                        style={{
-                          fontFamily: it.mono ? "var(--font-mono)" : "var(--font-sans)",
-                          fontSize: it.mono ? 12.5 : 14,
-                        }}
+                        className={
+                          it.mono ? "palette__label palette__label--mono" : "palette__label"
+                        }
                       >
                         {it.label}
                       </span>
-                      {it.hint && (
-                        <span
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 11,
-                            color: "var(--slate)",
-                          }}
-                        >
-                          {it.hint}
-                        </span>
-                      )}
+                      {it.hint && <span className="palette__hint">{it.hint}</span>}
                       {it.shortcut && (
-                        <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                        <span className="palette__shortcut">
                           {it.shortcut.map((k) => (
                             <Kbd key={k}>{k}</Kbd>
                           ))}
                         </span>
                       )}
-                    </button>
-                  );
-                })}
-            </div>
-          ))}
-        </div>
+                    </Autocomplete.Item>
+                  ))}
+              </div>
+            ))}
+          </Autocomplete.List>
+        </Autocomplete.Root>
       </div>
     </div>
   );
