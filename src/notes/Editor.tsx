@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import { Toolbar } from "@base-ui/react/toolbar";
 import { Bold, Code, Italic, Link, List } from "lucide-react";
 import { IconButton } from "../components/core/IconButton";
+import { TooltipContent, TooltipRoot, TooltipTrigger } from "../components/core/Tooltip";
 import { joinFrontmatter, splitFrontmatter } from "../editor/markdown";
 import { mount, type ActiveMarks, type NoteEditor } from "../editor/prosekit-editor";
 import { readNote, writeNote } from "../notebook/client";
@@ -19,6 +21,44 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
   saving: "saving…",
   error: "couldn't save",
 };
+
+/**
+ * One formatting control: a Base UI Toolbar item (roving tabindex) that is also
+ * a tooltip trigger, wrapping our IconButton. The label serves as both the
+ * accessible name and the visible tooltip.
+ */
+function FormatButton({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <TooltipRoot>
+      <Toolbar.Button
+        render={
+          <TooltipTrigger
+            render={
+              <IconButton
+                icon={icon}
+                aria-label={label}
+                size="sm"
+                active={active}
+                onClick={onClick}
+              />
+            }
+          />
+        }
+      />
+      <TooltipContent>{label}</TooltipContent>
+    </TooltipRoot>
+  );
+}
 
 /**
  * The note view: an editable ProseKit editor over the note's markdown.
@@ -128,59 +168,26 @@ export function Editor({ path }: EditorProps) {
   return (
     <div className="editor">
       <Toolbar.Root className="editor__toolbar" aria-label="Formatting">
-        <Toolbar.Button
-          render={
-            <IconButton
-              icon={Bold}
-              aria-label="Bold"
-              size="sm"
-              active={active.bold}
-              onClick={() => pmRef.current?.toggleBold()}
-            />
-          }
+        <FormatButton
+          icon={Bold}
+          label="Bold"
+          active={active.bold}
+          onClick={() => pmRef.current?.toggleBold()}
         />
-        <Toolbar.Button
-          render={
-            <IconButton
-              icon={Italic}
-              aria-label="Italic"
-              size="sm"
-              active={active.italic}
-              onClick={() => pmRef.current?.toggleItalic()}
-            />
-          }
+        <FormatButton
+          icon={Italic}
+          label="Italic"
+          active={active.italic}
+          onClick={() => pmRef.current?.toggleItalic()}
         />
-        <Toolbar.Button
-          render={
-            <IconButton
-              icon={Code}
-              aria-label="Inline code"
-              size="sm"
-              active={active.code}
-              onClick={() => pmRef.current?.toggleCode()}
-            />
-          }
+        <FormatButton
+          icon={Code}
+          label="Inline code"
+          active={active.code}
+          onClick={() => pmRef.current?.toggleCode()}
         />
-        <Toolbar.Button
-          render={
-            <IconButton
-              icon={List}
-              aria-label="Bullet list"
-              size="sm"
-              onClick={() => pmRef.current?.toggleList()}
-            />
-          }
-        />
-        <Toolbar.Button
-          render={
-            <IconButton
-              icon={Link}
-              aria-label="Link"
-              size="sm"
-              onClick={() => pmRef.current?.toggleLink()}
-            />
-          }
-        />
+        <FormatButton icon={List} label="Bullet list" onClick={() => pmRef.current?.toggleList()} />
+        <FormatButton icon={Link} label="Link" onClick={() => pmRef.current?.toggleLink()} />
         <div className="editor__toolbar-right">
           <span className="editor__words">{words} words</span>
         </div>

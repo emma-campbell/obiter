@@ -15,6 +15,7 @@ import { Icon } from "../components/core/Icon";
 import { Input } from "../components/core/Input";
 import { Select } from "../components/core/Select";
 import { Switch } from "../components/core/Switch";
+import { Tooltip } from "../components/core/Tooltip";
 import { useChooseFolder } from "../notebook/useChooseFolder";
 import { useSettings } from "../settings/SettingsProvider";
 import { deleteApiKey, hasApiKey, setApiKey } from "../settings/secrets";
@@ -202,25 +203,28 @@ export function Settings({ onClose, onDisconnect }: SettingsProps) {
         <Dialog.Popup className="settings-dialog">
           <div className="settings-header">
             <Dialog.Title className="settings-title">Settings</Dialog.Title>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void reload()}
-              aria-label="Reload settings from file"
-              title="Reload settings from file"
-              style={{ marginLeft: "auto", padding: "0 8px" }}
-            >
-              <Icon icon={RotateCw} size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              aria-label="Close settings"
-              style={{ padding: "0 8px" }}
-            >
-              <Icon icon={X} size={16} />
-            </Button>
+            <Tooltip label="Reload settings from file">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void reload()}
+                aria-label="Reload settings from file"
+                style={{ marginLeft: "auto", padding: "0 8px" }}
+              >
+                <Icon icon={RotateCw} size={14} />
+              </Button>
+            </Tooltip>
+            <Tooltip label="Close settings">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                aria-label="Close settings"
+                style={{ padding: "0 8px" }}
+              >
+                <Icon icon={X} size={16} />
+              </Button>
+            </Tooltip>
           </div>
 
           <Tabs.Root
