@@ -50,9 +50,9 @@ function RootLayout() {
         e.preventDefault();
         setSettings(true);
       }
+      // The settings modal is a Base UI Dialog now — it owns its own Escape.
       if (e.key === "Escape") {
         setCmd(false);
-        setSettings(false);
       }
     };
     window.addEventListener("keydown", h);

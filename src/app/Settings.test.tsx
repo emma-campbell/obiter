@@ -114,6 +114,40 @@ function selectedLabel(triggerLabel: string): string {
 }
 
 describe("Settings modal", () => {
+  it("marks the active tab with data-active (the selected-tab CSS keys off it)", async () => {
+    mockBackend(testSettings());
+    renderSettings();
+    await settled();
+
+    // Notebook is active by default; the others are not.
+    expect(screen.getByRole("tab", { name: "Notebook" }).hasAttribute("data-active")).toBe(true);
+    expect(screen.getByRole("tab", { name: "Appearance" }).hasAttribute("data-active")).toBe(false);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
+    expect(screen.getByRole("tab", { name: "Appearance" }).hasAttribute("data-active")).toBe(true);
+    expect(screen.getByRole("tab", { name: "Notebook" }).hasAttribute("data-active")).toBe(false);
+  });
+
+  it("closes on Escape (Base UI Dialog owns it now)", async () => {
+    let closed = false;
+    mockBackend(testSettings());
+    renderSettings({ onClose: () => (closed = true) });
+    await settled();
+
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), { key: "Escape" });
+    expect(closed).toBe(true);
+  });
+
+  it("closes when the close button is pressed", async () => {
+    let closed = false;
+    mockBackend(testSettings());
+    renderSettings({ onClose: () => (closed = true) });
+    await settled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close settings" }));
+    expect(closed).toBe(true);
+  });
+
   it("applies a control change straight to the backend", async () => {
     const { store, calls } = mockBackend(testSettings());
     renderSettings();
