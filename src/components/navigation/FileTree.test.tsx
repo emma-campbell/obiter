@@ -113,6 +113,61 @@ describe("FileTree (lazy)", () => {
     expect(load).not.toHaveBeenCalledWith("recipes");
   });
 
+  it("exposes tree/treeitem roles, aria-level, and the selected tab stop", async () => {
+    render(<FileTree loadChildren={loader()} selected="reading.md" />);
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+
+    expect(screen.getByRole("tree", { name: "Notebook files" })).toBeTruthy();
+    const recipes = screen.getByText("recipes").closest('[role="treeitem"]')!;
+    expect(recipes.getAttribute("aria-level")).toBe("1");
+    expect(recipes.getAttribute("aria-expanded")).toBe("false");
+
+    const reading = screen.getByText("reading.md").closest('[role="treeitem"]')!;
+    expect(reading.getAttribute("aria-selected")).toBe("true");
+    // The selected note is the single tab stop; siblings are removed from the
+    // tab order (roving tabindex).
+    expect(reading.getAttribute("tabindex")).toBe("0");
+    expect(recipes.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("moves focus with the arrow keys", async () => {
+    render(<FileTree loadChildren={loader()} />);
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+
+    fireEvent.keyDown(screen.getByRole("tree"), { key: "ArrowDown" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByText("reading.md").closest('[role="treeitem"]'),
+      );
+    });
+  });
+
+  it("expands with ArrowRight and collapses with ArrowLeft", async () => {
+    render(<FileTree loadChildren={loader()} />);
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+    const tree = screen.getByRole("tree");
+
+    fireEvent.keyDown(tree, { key: "ArrowRight" }); // recipes is the first row
+    await waitFor(() => expect(screen.getByText("dumplings.md")).toBeTruthy());
+    expect(
+      screen.getByText("recipes").closest('[role="treeitem"]')!.getAttribute("aria-expanded"),
+    ).toBe("true");
+
+    fireEvent.keyDown(tree, { key: "ArrowLeft" });
+    await waitFor(() => expect(screen.queryByText("dumplings.md")).toBeNull());
+  });
+
+  it("activates a file with Enter", async () => {
+    const onSelect = vi.fn();
+    render(<FileTree loadChildren={loader()} onSelect={onSelect} />);
+    await waitFor(() => expect(screen.getByText("reading.md")).toBeTruthy());
+    const tree = screen.getByRole("tree");
+
+    fireEvent.keyDown(tree, { key: "ArrowDown" }); // recipes -> reading.md
+    fireEvent.keyDown(tree, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledWith("reading.md");
+  });
+
   it("collapsing a folder doesn't refetch on re-expand", async () => {
     const load = loader();
     render(<FileTree loadChildren={load} />);

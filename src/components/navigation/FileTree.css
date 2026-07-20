@@ -1,0 +1,57 @@
+/* Obiter FileTree — an accessible tree (ADR 0001). Base UI's Collapsible drives
+   each folder's disclosure (aria-expanded / aria-controls / show-hide); the
+   tree semantics (role=tree/treeitem/group), roving tabindex, arrow-key
+   navigation, and this styling are ours. */
+
+.tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  user-select: none;
+  outline: none;
+}
+.tree__row:hover {
+  background: var(--bg-subtle);
+}
+/* Keyboard focus (roving tabindex) gets the pencil ring; a pointer click does
+   not, so mousing around the tree stays quiet. */
+.tree__row:focus-visible {
+  background: var(--bg-subtle);
+  outline: 2px solid var(--pencil-500);
+  outline-offset: -2px;
+}
+.tree__row--selected {
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  border-left-color: var(--pencil-500);
+}
+
+.tree__chevron {
+  flex: 0 0 auto;
+  color: var(--slate);
+}
+.tree__chevron-spacer {
+  flex: 0 0 auto;
+  width: 13px;
+}
+.tree__icon {
+  flex: 0 0 auto;
+  color: var(--slate);
+}
+.tree__row--selected .tree__icon {
+  color: var(--pencil-600);
+}
+.tree__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
