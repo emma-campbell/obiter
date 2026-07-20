@@ -8,6 +8,7 @@ export interface IconProps {
   size?: number;
   strokeWidth?: number;
   "aria-label"?: string;
+  className?: string;
   style?: CSSProperties;
 }
 

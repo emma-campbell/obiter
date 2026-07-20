@@ -24,7 +24,7 @@ describe("CommandPalette note jump", () => {
     const search = vi.fn(async () => HITS);
     render(<CommandPalette open items={COMMANDS} searchNotes={search} onOpenNote={() => {}} />);
 
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "dmp" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "dmp" } });
 
     await waitFor(() => {
       expect(screen.getByText("dumplings.md")).toBeTruthy();
@@ -58,7 +58,7 @@ describe("CommandPalette note jump", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "read" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "read" } });
     await waitFor(() => expect(screen.getByText("reading.md")).toBeTruthy());
 
     fireEvent.click(screen.getByText("reading.md"));
@@ -66,11 +66,39 @@ describe("CommandPalette note jump", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("navigates and runs with the keyboard (Base UI owns the arrow keys now)", async () => {
+    const run = vi.fn();
+    const onClose = vi.fn();
+    const commands: PaletteItem[] = [
+      { id: "a", label: "Alpha", section: "Commands", run },
+      { id: "b", label: "Beta", section: "Commands", run: () => {} },
+    ];
+    render(<CommandPalette open items={commands} onClose={onClose} />);
+
+    const input = screen.getByRole("combobox");
+    // Arrow down highlights the first option; the CSS keys off data-highlighted.
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(
+      screen.getByText("Alpha").closest('[role="option"]')?.hasAttribute("data-highlighted"),
+    ).toBe(true);
+    // Enter runs the highlighted command and closes.
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(run).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("closes on Escape", async () => {
+    const onClose = vi.fn();
+    render(<CommandPalette open items={COMMANDS} onClose={onClose} />);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("debounces rapid typing into a single query", async () => {
     const search = vi.fn(async (_query: string) => HITS);
     render(<CommandPalette open items={COMMANDS} searchNotes={search} onOpenNote={() => {}} />);
 
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "d" } });
     fireEvent.change(input, { target: { value: "du" } });
     fireEvent.change(input, { target: { value: "dum" } });
