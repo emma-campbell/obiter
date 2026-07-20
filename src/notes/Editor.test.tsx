@@ -47,6 +47,20 @@ describe("Editor (editable)", () => {
     expect(screen.getByText("saved")).toBeTruthy();
   });
 
+  it("exposes the formatting controls as a roving-tabindex toolbar", async () => {
+    mockBackend({ "n.md": "# Hi" });
+    render(<Editor path="n.md" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("toolbar", { name: "Formatting" })).toBeTruthy();
+    });
+    // Base UI Toolbar gives the group one tab stop (roving tabindex): the first
+    // control is tabbable, the rest are reached with the arrow keys.
+    expect(screen.getByLabelText("Bold").getAttribute("tabindex")).toBe("0");
+    expect(screen.getByLabelText("Italic").getAttribute("tabindex")).toBe("-1");
+    expect(screen.getByLabelText("Link").getAttribute("tabindex")).toBe("-1");
+  });
+
   it("renders an error state when the note can't be read", async () => {
     mockBackend({ "gone.md": new Error("missing") });
     render(<Editor path="gone.md" />);
