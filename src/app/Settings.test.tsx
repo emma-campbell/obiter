@@ -114,6 +114,20 @@ function selectedLabel(triggerLabel: string): string {
 }
 
 describe("Settings modal", () => {
+  it("marks the active tab with data-active (the selected-tab CSS keys off it)", async () => {
+    mockBackend(testSettings());
+    renderSettings();
+    await settled();
+
+    // Notebook is active by default; the others are not.
+    expect(screen.getByRole("tab", { name: "Notebook" }).hasAttribute("data-active")).toBe(true);
+    expect(screen.getByRole("tab", { name: "Appearance" }).hasAttribute("data-active")).toBe(false);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
+    expect(screen.getByRole("tab", { name: "Appearance" }).hasAttribute("data-active")).toBe(true);
+    expect(screen.getByRole("tab", { name: "Notebook" }).hasAttribute("data-active")).toBe(false);
+  });
+
   it("closes on Escape (Base UI Dialog owns it now)", async () => {
     let closed = false;
     mockBackend(testSettings());

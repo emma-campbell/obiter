@@ -64,7 +64,7 @@
   padding: 8px 10px;
   cursor: pointer;
 }
-.settings-tab[data-selected] {
+.settings-tab[data-active] {
   color: var(--ink);
   border-bottom-color: var(--ink);
 }
