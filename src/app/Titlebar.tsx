@@ -1,5 +1,6 @@
 import { PanelLeft, Search, Settings } from "lucide-react";
 import { IconButton } from "../components/core/IconButton";
+import { Tooltip } from "../components/core/Tooltip";
 
 export interface TitlebarProps {
   /** the open note's full path, or "obiter" on the empty state */
@@ -40,13 +41,15 @@ export function Titlebar({
         WebkitUserSelect: "none",
       }}
     >
-      <IconButton
-        icon={PanelLeft}
-        aria-label="Toggle sidebar"
-        size="sm"
-        active={sidebarOpen}
-        onClick={onToggleSidebar}
-      />
+      <Tooltip label="Toggle sidebar">
+        <IconButton
+          icon={PanelLeft}
+          aria-label="Toggle sidebar"
+          size="sm"
+          active={sidebarOpen}
+          onClick={onToggleSidebar}
+        />
+      </Tooltip>
       {/* drag-region only covers the element itself, not children — repeat it
           here so the wide middle of the bar drags the window too */}
       <div
@@ -61,8 +64,12 @@ export function Titlebar({
       >
         {path}
       </div>
-      <IconButton icon={Search} aria-label="Search" size="sm" onClick={onSearch} />
-      <IconButton icon={Settings} aria-label="Settings" size="sm" onClick={onSettings} />
+      <Tooltip label="Search">
+        <IconButton icon={Search} aria-label="Search" size="sm" onClick={onSearch} />
+      </Tooltip>
+      <Tooltip label="Settings">
+        <IconButton icon={Settings} aria-label="Settings" size="sm" onClick={onSettings} />
+      </Tooltip>
     </div>
   );
 }
