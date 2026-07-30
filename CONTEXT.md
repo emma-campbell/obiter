@@ -29,6 +29,18 @@ saved searches, or tag-folders. What you see is what is on disk.
 A single markdown file inside the notebook. The unit the user reads and
 edits. "Note" is the app's word throughout (`NoteFile`, `src/notes/`).
 
+## Open Note
+
+The note currently loaded in the editor, together with any edits not yet
+written to disk. Exactly one note is open at a time; opening another closes
+the first.
+
+An open note is **loading**, **unreadable** (the file could not be read), or
+**ready**. A ready one is **clean** when it matches the file on disk and
+**dirty** when it carries edits that don't. Saving is continuous and
+automatic — there is no manual save mode, and no "unsaved document" the user
+has to remember to commit.
+
 ## Connected / Disconnected
 
 The notebook is **connected** when a folder is chosen and readable.

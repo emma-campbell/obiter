@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
 // The editable note view: loads real contents via read_note and mounts an
 // editable editor with the formatting toolbar and a save-state indicator.
-// The autosave timing/write logic is covered directly in useAutosave.test;
-// here we assert the wiring — contents load, the toolbar renders, the
-// indicator shows, and the error state appears — not ProseMirror internals.
+// The save lifecycle is covered directly in open-note.test; here we assert
+// the wiring — contents load, the toolbar renders, the indicator shows, and
+// the error state appears — not ProseMirror internals.
+//
+// The last test guards a data-loss path rather than wiring: nothing may be
+// written to a note before its contents have loaded. It lives at this level
+// deliberately, so it holds whatever shape the save machinery takes.
 
+import { StrictMode } from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vite-plus/test";
@@ -77,5 +82,43 @@ describe("Editor (editable)", () => {
 
     rerender(<Editor path="b.md" />);
     await waitFor(() => expect(reads).toContain("b.md"));
+  });
+
+  it("loads content under StrictMode, which mounts effects twice", async () => {
+    // main.tsx wraps the app in StrictMode, so every effect runs, cleans up,
+    // and runs again. The note instance survives that remount, so nothing in
+    // the first cleanup may leave it unable to load.
+    mockBackend({ "n.md": "# Hello from disk" });
+
+    render(
+      <StrictMode>
+        <Editor path="n.md" />
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Hello from disk")).toBeTruthy();
+    });
+  });
+
+  it("never writes the note before its contents have loaded", async () => {
+    const writes: Array<{ path: string; contents: string }> = [];
+    mockIPC((cmd, args) => {
+      // The read never settles: the editor stays in its loading window.
+      if (cmd === "read_note") return new Promise<string>(() => {});
+      if (cmd === "write_note") {
+        writes.push(args as { path: string; contents: string });
+        return null;
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+
+    render(<Editor path="notes/important.md" />);
+    // ⌘-Tab away mid-load. There is no content to save yet, and the note on
+    // disk must survive untouched — writing here would truncate it.
+    window.dispatchEvent(new Event("blur"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(writes).toEqual([]);
   });
 });

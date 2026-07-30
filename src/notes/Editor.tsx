@@ -4,10 +4,9 @@ import { Toolbar } from "@base-ui/react/toolbar";
 import { Bold, Code, Italic, Link, List } from "lucide-react";
 import { IconButton } from "../components/core/IconButton";
 import { TooltipContent, TooltipRoot, TooltipTrigger } from "../components/core/Tooltip";
-import { joinFrontmatter, splitFrontmatter } from "../editor/markdown";
 import { mount, type ActiveMarks, type NoteEditor } from "../editor/prosekit-editor";
-import { readNote, writeNote } from "../notebook/client";
-import { useAutosave, type SaveStatus } from "./useAutosave";
+import type { SaveState } from "./open-note";
+import { useOpenNote } from "./useOpenNote";
 import "./Editor.css";
 
 export interface EditorProps {
@@ -16,10 +15,13 @@ export interface EditorProps {
   path: string;
 }
 
-const STATUS_LABEL: Record<SaveStatus, string> = {
-  saved: "saved",
+const STATUS_LABEL: Record<SaveState, string> = {
+  clean: "saved",
   saving: "saving…",
-  error: "couldn't save",
+  failed: "couldn't save",
+  // Unreachable until #34 lands the simultaneous-edit UX, which replaces
+  // this with a real affordance rather than a status word.
+  conflicted: "conflict",
 };
 
 /**
@@ -61,62 +63,25 @@ function FormatButton({
 }
 
 /**
- * The note view: an editable ProseKit editor over the note's markdown.
- * Frontmatter is split off on load and re-attached on save so it survives
- * verbatim without passing through the editor. Edits autosave (see
- * useAutosave); there is no manual save mode.
+ * The note view: an editable ProseKit editor over the open note's markdown.
+ * The note itself — loading, frontmatter, autosave, reload-from-disk — lives
+ * in open-note.ts; this renders it and forwards edits. There is no manual
+ * save mode.
  */
 export function Editor({ path }: EditorProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const pmRef = useRef<NoteEditor | null>(null);
-  const frontmatterRef = useRef("");
-  const [body, setBody] = useState<string | null>(null);
-  const [error, setError] = useState(false);
   const [words, setWords] = useState(0);
   const [active, setActive] = useState<ActiveMarks>({ bold: false, italic: false, code: false });
+  const { state, note } = useOpenNote(path);
 
-  // Apply a full note's markdown: split frontmatter off (kept aside), hand
-  // the body to the editor. Used both on initial load and on an external
-  // reload triggered from focus.
-  const applyContent = (md: string) => {
-    const { frontmatter, body: noteBody } = splitFrontmatter(md);
-    frontmatterRef.current = frontmatter;
-    setBody(noteBody);
-  };
-  const applyContentRef = useRef(applyContent);
-  applyContentRef.current = applyContent;
+  // The markdown to seed the editor with: set once the read lands, and again
+  // if the note is reloaded after changing on disk.
+  const body = state.status === "ready" ? state.body : null;
 
-  const autosave = useAutosave({
-    read: () => joinFrontmatter(frontmatterRef.current, pmRef.current?.getMarkdown() ?? ""),
-    write: (contents) => writeNote(path, contents),
-    readDisk: () => readNote(path),
-    applyReload: (md) => applyContentRef.current(md),
-  });
-  // Stable ref so the mount effect doesn't re-run when autosave identity
-  // changes; the editor mounts once per loaded note.
-  const autosaveRef = useRef(autosave);
-  autosaveRef.current = autosave;
-
-  // Load the note whenever the open path changes.
-  useEffect(() => {
-    let cancelled = false;
-    setBody(null);
-    setError(false);
-    readNote(path)
-      .then((md) => {
-        if (!cancelled) applyContentRef.current(md);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [path]);
-
-  // Mount the editable editor once the body is in hand. Cleanup flushes any
-  // pending write for this note *before* tearing the editor down, so a
-  // note-switch (which remounts) never drops edits.
+  // Mount the editable editor once the body is in hand, and hand the note its
+  // live document. Cleanup detaches before tearing the editor down, so no
+  // save can ever try to serialize a destroyed editor.
   useEffect(() => {
     if (body === null || !mountRef.current) return;
     const pm = mount(
@@ -127,18 +92,19 @@ export function Editor({ path }: EditorProps) {
           setActive(s.active);
           setWords(s.words);
         },
-        onChange: () => autosaveRef.current.schedule(),
+        onChange: () => note.edit(),
       },
       { editable: true },
     );
     pmRef.current = pm;
-    autosaveRef.current.markSaved(joinFrontmatter(frontmatterRef.current, pm.getMarkdown()));
+    note.attach(() => pm.getMarkdown());
     return () => {
-      autosaveRef.current.flush();
+      void note.flush();
+      note.detach();
       pm.destroy();
       pmRef.current = null;
     };
-  }, [body]);
+  }, [body, note]);
 
   // ⌘S forces an immediate save and never lets the browser's save dialog
   // appear. Autosave usually already handled it — this is the reflex.
@@ -146,14 +112,14 @@ export function Editor({ path }: EditorProps) {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        autosaveRef.current.flush();
+        void note.flush();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [note]);
 
-  if (error) {
+  if (state.status === "unreadable") {
     return (
       <div className="editor">
         <div className="editor__scroll">
@@ -198,8 +164,11 @@ export function Editor({ path }: EditorProps) {
       </div>
 
       <div className="editor__footer">
-        <span className="editor__saved" data-status={autosave.status}>
-          {STATUS_LABEL[autosave.status]}
+        <span
+          className="editor__saved"
+          data-status={state.status === "ready" ? state.save : "clean"}
+        >
+          {STATUS_LABEL[state.status === "ready" ? state.save : "clean"]}
         </span>
         <span>{words} words</span>
         <span className="editor__disk">markdown · UTF-8 · LF</span>
