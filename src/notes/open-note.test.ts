@@ -115,6 +115,19 @@ describe("openNote — refusing to write", () => {
     expect(writes).toEqual([]);
   });
 
+  it("writes nothing once the document has been detached", async () => {
+    // The editor holding the document is about to be torn down, so there is
+    // nothing left that can safely be serialized.
+    const { note, doc, writes } = await opened("x\n");
+
+    doc.value = "xy\n";
+    note.edit();
+    note.detach();
+    await note.flush();
+
+    expect(writes).toEqual([]);
+  });
+
   it("writes nothing when the note could not be read", async () => {
     const { io, writes, control } = fakeIo({ "n.md": "x" });
     control.readError = new Error("gone");

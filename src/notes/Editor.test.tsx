@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // The editable note view: loads real contents via read_note and mounts an
 // editable editor with the formatting toolbar and a save-state indicator.
-// The autosave timing/write logic is covered directly in useAutosave.test;
-// here we assert the wiring — contents load, the toolbar renders, the
-// indicator shows, and the error state appears — not ProseMirror internals.
+// The save lifecycle is covered directly in open-note.test; here we assert
+// the wiring — contents load, the toolbar renders, the indicator shows, and
+// the error state appears — not ProseMirror internals.
 //
 // The last test guards a data-loss path rather than wiring: nothing may be
 // written to a note before its contents have loaded. It lives at this level

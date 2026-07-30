@@ -57,6 +57,10 @@ export interface OpenNote {
    *  and re-baselines to what the editor renders — so a note whose markdown
    *  the editor normalizes isn't reported dirty the moment it opens. */
   attach(getContent: () => string): void;
+  /** Forget the live document, before the editor holding it is torn down.
+   *  Saves are refused until something attaches again, so teardown order
+   *  can never get as far as serializing a destroyed editor. */
+  detach(): void;
   /** A change happened: mark dirty and debounce a save. */
   edit(): void;
   /** Save now, skipping the debounce (⌘S, leaving the note or the window). */
@@ -161,6 +165,10 @@ export function openNote(path: string, { io }: { io: NoteIo }): OpenNote {
       baseline = joinFrontmatter(frontmatter, next());
       editedSinceSnapshot = false;
       patchReady({ save: "clean", dirty: false });
+    },
+
+    detach() {
+      getContent = null;
     },
 
     edit() {
