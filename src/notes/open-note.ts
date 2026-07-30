@@ -149,6 +149,11 @@ export function openNote(path: string, { io }: { io: NoteIo }): OpenNote {
     },
 
     async load() {
+      // Genuinely idempotent: a second call on a note that already read
+      // successfully is a no-op, so a double-invoked effect doesn't re-read
+      // the file or reset the baseline under an attached editor. Retrying
+      // after `unreadable` still works.
+      if (disposed || state.status === "ready") return;
       let md: string;
       try {
         md = await io.read(path);

@@ -24,12 +24,16 @@ export function useOpenNote(path: string, io: NoteIo = tauriNoteIo): UseOpenNote
 
   useEffect(() => {
     void note.load();
-    // Flush before disposing so leaving a note never drops its edits. The
-    // editor detaches its document as it tears down, so this is safe
-    // whichever cleanup React runs first.
+    // Flush on the way out so leaving a note never drops its edits.
+    //
+    // Deliberately does NOT dispose. React gives no signal that separates a
+    // real unmount from StrictMode's remount, and the note outlives that
+    // remount (useMemo keeps it) — so disposing here would leave a note that
+    // can never load again. Nothing leaks by skipping it: flush clears the
+    // pending debounce, and useSyncExternalStore removes its own listener.
+    // dispose() is for owners outside React.
     return () => {
       void note.flush();
-      note.dispose();
     };
   }, [note]);
 

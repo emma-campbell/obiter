@@ -9,6 +9,7 @@
 // written to a note before its contents have loaded. It lives at this level
 // deliberately, so it holds whatever shape the save machinery takes.
 
+import { StrictMode } from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vite-plus/test";
@@ -81,6 +82,23 @@ describe("Editor (editable)", () => {
 
     rerender(<Editor path="b.md" />);
     await waitFor(() => expect(reads).toContain("b.md"));
+  });
+
+  it("loads content under StrictMode, which mounts effects twice", async () => {
+    // main.tsx wraps the app in StrictMode, so every effect runs, cleans up,
+    // and runs again. The note instance survives that remount, so nothing in
+    // the first cleanup may leave it unable to load.
+    mockBackend({ "n.md": "# Hello from disk" });
+
+    render(
+      <StrictMode>
+        <Editor path="n.md" />
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Hello from disk")).toBeTruthy();
+    });
   });
 
   it("never writes the note before its contents have loaded", async () => {
