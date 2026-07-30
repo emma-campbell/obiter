@@ -18,6 +18,7 @@ import { searchNotes } from "./notebook/client";
 import { useChooseFolder } from "./notebook/useChooseFolder";
 import { NotebookGate, useNotebookStatus } from "./app/NotebookGate";
 import { RecoveryToast } from "./app/RecoveryToast";
+import { RefreshProvider } from "./app/RefreshProvider";
 import { Settings } from "./app/Settings";
 import { Sidebar } from "./app/Sidebar";
 import { Titlebar } from "./app/Titlebar";
@@ -103,52 +104,54 @@ function RootLayout() {
   return (
     <ToastProvider>
       <TooltipProvider delay={400}>
-        <NotebookGate>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              background: "var(--paper)",
-            }}
-          >
-            <Titlebar
-              path={path}
-              sidebarOpen={sidebar}
-              onToggleSidebar={() => setSidebar((s) => !s)}
-              onSearch={() => setCmd(true)}
-              onSettings={() => setSettings(true)}
-            />
-            <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-              {sidebar && (
-                <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
+        <RefreshProvider>
+          <NotebookGate>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                background: "var(--paper)",
+              }}
+            >
+              <Titlebar
+                path={path}
+                sidebarOpen={sidebar}
+                onToggleSidebar={() => setSidebar((s) => !s)}
+                onSearch={() => setCmd(true)}
+                onSettings={() => setSettings(true)}
+              />
+              <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+                {sidebar && (
+                  <Sidebar selected={splat} onSelect={openRelative} onNew={() => setCmd(true)} />
+                )}
+                <Outlet />
+              </div>
+              <RecoveryToast onViewSettings={() => setSettings(true)} />
+              <ToastViewport />
+              {cmd && (
+                <CommandPalette
+                  open
+                  items={paletteItems}
+                  searchNotes={searchNotes}
+                  onOpenNote={(p) => openRelative(p)}
+                  onClose={() => setCmd(false)}
+                />
               )}
-              <Outlet />
+              {settings && (
+                <Settings
+                  onClose={() => setSettings(false)}
+                  onDisconnect={() => {
+                    setSettings(false);
+                    navigate({ to: "/" });
+                  }}
+                />
+              )}
             </div>
-            <RecoveryToast onViewSettings={() => setSettings(true)} />
-            <ToastViewport />
-            {cmd && (
-              <CommandPalette
-                open
-                items={paletteItems}
-                searchNotes={searchNotes}
-                onOpenNote={(p) => openRelative(p)}
-                onClose={() => setCmd(false)}
-              />
-            )}
-            {settings && (
-              <Settings
-                onClose={() => setSettings(false)}
-                onDisconnect={() => {
-                  setSettings(false);
-                  navigate({ to: "/" });
-                }}
-              />
-            )}
-          </div>
-        </NotebookGate>
+          </NotebookGate>
+        </RefreshProvider>
       </TooltipProvider>
     </ToastProvider>
   );
