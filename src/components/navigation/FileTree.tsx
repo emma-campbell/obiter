@@ -121,6 +121,12 @@ function TreeNode({
 export interface FileTreeProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> {
   /** Lists one folder's children; `""` is the notebook root. */
   loadChildren: (path: string) => Promise<Entry[]>;
+  /**
+   * Register work to run on each refresh, returning an unsubscribe. Injected
+   * rather than read from context so this stays a plain component: the app
+   * layer decides what a refresh is (see app/refresh.ts).
+   */
+  subscribeRefresh?: (task: () => Promise<void> | void) => () => void;
   selected?: string;
   onSelect?: (path: string) => void;
 }
@@ -136,7 +142,13 @@ export interface FileTreeProps extends Omit<HTMLAttributes<HTMLDivElement>, "onS
  * expand/collapse or step to parent, Enter/Space activate). Each folder's
  * expand/collapse rides on Base UI's Collapsible.
  */
-export function FileTree({ loadChildren, selected, onSelect, ...rest }: FileTreeProps) {
+export function FileTree({
+  loadChildren,
+  subscribeRefresh,
+  selected,
+  onSelect,
+  ...rest
+}: FileTreeProps) {
   const [childrenByPath, setChildrenByPath] = useState<Map<string, Entry[]>>(new Map());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [focusedPath, setFocusedPath] = useState<string | undefined>(undefined);
@@ -161,17 +173,17 @@ export function FileTree({ loadChildren, selected, onSelect, ...rest }: FileTree
     });
   }, [load]);
 
-  // Re-list the root and every expanded folder when the window regains focus,
-  // so notes added or removed in another app appear without a restart. This is
-  // the interim for having no file watcher (deliberately out of scope).
+  // Re-list the root and every expanded folder on each refresh, so notes
+  // added or removed in another app appear without a restart. Collapsed
+  // folders are skipped: what isn't on show doesn't need re-reading.
   useEffect(() => {
-    const onFocus = () => {
-      void load("").catch(() => {});
-      for (const path of expanded) void load(path).catch(() => {});
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [load, expanded]);
+    if (!subscribeRefresh) return;
+    return subscribeRefresh(async () => {
+      // Awaited so a refresh isn't reported settled before the tree has
+      // caught up; allSettled so one unreadable folder doesn't stop the rest.
+      await Promise.allSettled([load(""), ...[...expanded].map((path) => load(path))]);
+    });
+  }, [subscribeRefresh, load, expanded]);
 
   const setOpen = useCallback(
     (node: Entry, open: boolean) => {
