@@ -41,6 +41,16 @@ An open note is **loading**, **unreadable** (the file could not be read), or
 automatic — there is no manual save mode, and no "unsaved document" the user
 has to remember to commit.
 
+## Refresh
+
+Obiter's notes are ordinary files, so another tool — an editor, `git pull`,
+a sync client — can change them while Obiter is open. A **refresh** is
+Obiter noticing: it re-checks the notebook is still there, re-reads the
+folders on show, and picks up an outside change to the open note. A clean
+open note takes the newer version silently; a dirty one keeps your edits.
+
+Refreshes happen on their own. You never ask for one.
+
 ## Connected / Disconnected
 
 The notebook is **connected** when a folder is chosen and readable.
