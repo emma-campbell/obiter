@@ -50,6 +50,11 @@ export function useAutosave({ read, write, readDisk, applyReload }: UseAutosaveA
   applyReloadRef.current = applyReload;
 
   const save = useCallback(async () => {
+    // A null baseline means markSaved hasn't run, so the note hasn't loaded
+    // yet and `read` has nothing real to give us. Writing here would persist
+    // an empty buffer over the file on disk — see the load-window test in
+    // Editor.test.tsx.
+    if (baseline.current === null) return;
     const content = readRef.current();
     if (content === baseline.current) return; // nothing changed since last save
     setStatus("saving");
