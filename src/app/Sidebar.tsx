@@ -4,6 +4,7 @@ import { Icon } from "../components/core/Icon";
 import { FileTree } from "../components/navigation/FileTree";
 import { listDir } from "../notebook/client";
 import { useSettings } from "../settings/SettingsProvider";
+import { useRefresh } from "./RefreshProvider";
 
 export interface SidebarProps {
   /** Notebook-relative path of the open note. */
@@ -15,6 +16,7 @@ export interface SidebarProps {
 /** Left rail: the notebook header, the lazy FileTree, and New note. */
 export function Sidebar({ selected, onSelect, onNew }: SidebarProps) {
   const { settings } = useSettings();
+  const refresh = useRefresh();
   const path = settings?.notebook.path ?? "";
   const name = path.split("/").filter(Boolean).pop() ?? path;
 
@@ -54,7 +56,12 @@ export function Sidebar({ selected, onSelect, onNew }: SidebarProps) {
         </span>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: "6px 6px" }}>
-        <FileTree loadChildren={listDir} selected={selected} onSelect={onSelect} />
+        <FileTree
+          loadChildren={listDir}
+          subscribeRefresh={refresh.subscribe}
+          selected={selected}
+          onSelect={onSelect}
+        />
       </div>
       <div style={{ padding: 10, borderTop: "1px solid var(--chalk)" }}>
         <Button

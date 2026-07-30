@@ -22,6 +22,19 @@ function loader() {
   });
 }
 
+/** Stands in for the app's refresh seam: hand the tree a subscriber, then
+ *  call `run()` to make a refresh happen. No window events involved. */
+function refresher() {
+  const tasks = new Set<() => Promise<void> | void>();
+  return {
+    subscribe: (task: () => Promise<void> | void) => {
+      tasks.add(task);
+      return () => tasks.delete(task);
+    },
+    run: () => Promise.allSettled([...tasks].map((task) => task())),
+  };
+}
+
 afterEach(cleanup);
 
 describe("FileTree (lazy)", () => {
@@ -61,7 +74,7 @@ describe("FileTree (lazy)", () => {
     expect(onSelect).toHaveBeenCalledWith("reading.md");
   });
 
-  it("re-lists the root and expanded folders on window focus", async () => {
+  it("re-lists the root and expanded folders on a refresh", async () => {
     let recipesChildren: Entry[] = [
       { name: "dumplings.md", path: "recipes/dumplings.md", kind: "file" },
     ];
@@ -74,7 +87,8 @@ describe("FileTree (lazy)", () => {
       if (path === "recipes") return Promise.resolve(recipesChildren);
       return Promise.resolve([]);
     });
-    render(<FileTree loadChildren={load} />);
+    const refresh = refresher();
+    render(<FileTree loadChildren={load} subscribeRefresh={refresh.subscribe} />);
     await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
 
     fireEvent.click(screen.getByText("recipes"));
@@ -87,7 +101,7 @@ describe("FileTree (lazy)", () => {
       { name: "gyoza.md", path: "recipes/gyoza.md", kind: "file" },
     ];
 
-    fireEvent(window, new Event("focus"));
+    await refresh.run();
 
     await waitFor(() => {
       expect(screen.getByText("new-top.md")).toBeTruthy();
@@ -95,22 +109,36 @@ describe("FileTree (lazy)", () => {
     });
   });
 
-  it("does not re-list collapsed folders on focus", async () => {
+  it("does not re-list collapsed folders on a refresh", async () => {
     const load = vi.fn((path: string): Promise<Entry[]> => {
       if (path === "")
         return Promise.resolve([{ name: "recipes", path: "recipes", kind: "folder" }]);
       return Promise.resolve([]);
     });
-    render(<FileTree loadChildren={load} />);
+    const refresh = refresher();
+    render(<FileTree loadChildren={load} subscribeRefresh={refresh.subscribe} />);
     await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
 
-    fireEvent(window, new Event("focus"));
+    await refresh.run();
 
-    await waitFor(() => {
-      expect(load.mock.calls.filter(([p]) => p === "").length).toBeGreaterThanOrEqual(2);
-    });
-    // "recipes" was never expanded, so focus never fetches it.
+    expect(load.mock.calls.filter(([p]) => p === "").length).toBeGreaterThanOrEqual(2);
+    // "recipes" was never expanded, so a refresh never fetches it.
     expect(load).not.toHaveBeenCalledWith("recipes");
+  });
+
+  it("stops re-listing once it unsubscribes", async () => {
+    const load = loader();
+    const refresh = refresher();
+    const { unmount } = render(
+      <FileTree loadChildren={load} subscribeRefresh={refresh.subscribe} />,
+    );
+    await waitFor(() => expect(screen.getByText("recipes")).toBeTruthy());
+
+    unmount();
+    const before = load.mock.calls.length;
+    await refresh.run();
+
+    expect(load.mock.calls.length).toBe(before);
   });
 
   it("exposes tree/treeitem roles, aria-level, and the selected tab stop", async () => {

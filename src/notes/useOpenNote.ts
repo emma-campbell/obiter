@@ -2,6 +2,7 @@
 // open-note.ts); this is the whole of its React surface.
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useRefresh } from "../app/RefreshProvider";
 import { tauriNoteIo, type NoteIo } from "./note-io";
 import { openNote, type OpenNote, type OpenNoteState } from "./open-note";
 
@@ -15,12 +16,14 @@ export interface UseOpenNote {
  * the editor is keyed by path in the router, so a given instance never sees
  * its path change.
  *
- * The window wiring lives here rather than in the note: blur flushes pending
- * edits, focus picks up a change another tool made to the file. Both move to
- * the refresh seam once it exists, without the note changing.
+ * Picking up an outside change goes through the refresh seam, which probes
+ * the notebook first and coordinates with the tree. Flushing on the way out
+ * stays here: it has one subscriber and nothing to order it against, so it
+ * needs no coordination.
  */
 export function useOpenNote(path: string, io: NoteIo = tauriNoteIo): UseOpenNote {
   const note = useMemo(() => openNote(path, { io }), [path, io]);
+  const refresh = useRefresh();
 
   useEffect(() => {
     void note.load();
@@ -39,14 +42,11 @@ export function useOpenNote(path: string, io: NoteIo = tauriNoteIo): UseOpenNote
 
   useEffect(() => {
     const onBlur = () => void note.flush();
-    const onFocus = () => void note.reconcile();
     window.addEventListener("blur", onBlur);
-    window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("blur", onBlur);
-      window.removeEventListener("focus", onFocus);
-    };
+    return () => window.removeEventListener("blur", onBlur);
   }, [note]);
+
+  useEffect(() => refresh.subscribe(() => note.reconcile()), [refresh, note]);
 
   const state = useSyncExternalStore(note.subscribe, note.getState);
 

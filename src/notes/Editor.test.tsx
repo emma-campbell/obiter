@@ -13,7 +13,16 @@ import { StrictMode } from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { RefreshProvider } from "../app/RefreshProvider";
 import { Editor } from "./Editor";
+
+/** The editor reaches for the refresh seam to pick up outside changes, so
+ *  it needs the provider. Nothing here triggers a refresh. */
+const editor = (path: string) => (
+  <RefreshProvider>
+    <Editor path={path} />
+  </RefreshProvider>
+);
 
 function mockBackend(bodyByPath: Record<string, string | Error>) {
   const reads: string[] = [];
@@ -39,7 +48,7 @@ afterEach(() => {
 describe("Editor (editable)", () => {
   it("loads the note by path and mounts the editable toolbar + indicator", async () => {
     const reads = mockBackend({ "recipes/dumplings.md": "# Dumplings\n\nRest the dough." });
-    render(<Editor path="recipes/dumplings.md" />);
+    render(editor("recipes/dumplings.md"));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Bold")).toBeTruthy();
@@ -54,7 +63,7 @@ describe("Editor (editable)", () => {
 
   it("exposes the formatting controls as a roving-tabindex toolbar", async () => {
     mockBackend({ "n.md": "# Hi" });
-    render(<Editor path="n.md" />);
+    render(editor("n.md"));
 
     await waitFor(() => {
       expect(screen.getByRole("toolbar", { name: "Formatting" })).toBeTruthy();
@@ -68,7 +77,7 @@ describe("Editor (editable)", () => {
 
   it("renders an error state when the note can't be read", async () => {
     mockBackend({ "gone.md": new Error("missing") });
-    render(<Editor path="gone.md" />);
+    render(editor("gone.md"));
 
     await waitFor(() => {
       expect(screen.getByText(/Couldn't open this note/)).toBeTruthy();
@@ -77,10 +86,10 @@ describe("Editor (editable)", () => {
 
   it("reloads when the open path changes", async () => {
     const reads = mockBackend({ "a.md": "note a", "b.md": "note b" });
-    const { rerender } = render(<Editor path="a.md" />);
+    const { rerender } = render(editor("a.md"));
     await waitFor(() => expect(reads).toContain("a.md"));
 
-    rerender(<Editor path="b.md" />);
+    rerender(editor("b.md"));
     await waitFor(() => expect(reads).toContain("b.md"));
   });
 
@@ -90,11 +99,7 @@ describe("Editor (editable)", () => {
     // the first cleanup may leave it unable to load.
     mockBackend({ "n.md": "# Hello from disk" });
 
-    render(
-      <StrictMode>
-        <Editor path="n.md" />
-      </StrictMode>,
-    );
+    render(<StrictMode>{editor("n.md")}</StrictMode>);
 
     await waitFor(() => {
       expect(screen.getByText("Hello from disk")).toBeTruthy();
@@ -113,7 +118,7 @@ describe("Editor (editable)", () => {
       throw new Error(`unexpected command: ${cmd}`);
     });
 
-    render(<Editor path="notes/important.md" />);
+    render(editor("notes/important.md"));
     // ⌘-Tab away mid-load. There is no content to save yet, and the note on
     // disk must survive untouched — writing here would truncate it.
     window.dispatchEvent(new Event("blur"));
