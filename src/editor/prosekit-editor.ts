@@ -11,6 +11,7 @@ import { ListDOMSerializer } from "prosekit/extensions/list";
 import { Plugin } from "prosekit/pm/state";
 import { defineActiveLine } from "./active-line";
 import { htmlToMd, mdToHtml } from "./markdown";
+import { defineWikilinkSpec } from "./wikilinks";
 
 /** Disables user editing at the ProseMirror level — the canonical read-only. */
 function defineReadonly() {
@@ -32,6 +33,8 @@ export interface NoteEditorHandlers {
   onState?: (snapshot: EditorSnapshot) => void;
   /** Fires on every document change (typing and toolbar commands alike). */
   onChange?: () => void;
+  /** Fires when a [[wikilink]] is clicked, with its target as written. */
+  onWikilink?: (target: string) => void;
 }
 
 export interface NoteEditor {
@@ -113,7 +116,7 @@ export function mount(
   handlers: NoteEditorHandlers = {},
   options: MountOptions = {},
 ): NoteEditor {
-  const { onState, onChange } = handlers;
+  const { onState, onChange, onWikilink } = handlers;
   const { editable = true } = options;
   // Pass the mark/command-contributing extensions as direct union args so
   // their types infer (an intermediate Extension[] widens them to `never`).
@@ -124,6 +127,7 @@ export function mount(
     extension: union(
       defineBasicExtension(),
       defineActiveLine(),
+      defineWikilinkSpec(),
       ...(editable ? [] : [defineReadonly()]),
       ...(onChange ? [defineDocChangeHandler(() => onChange())] : []),
     ),
@@ -146,7 +150,19 @@ export function mount(
     t = setTimeout(emit, 150);
   };
   const onSel = () => emit();
+  // Following a wikilink is a plain click, matching the notes-app genre —
+  // the cursor can still be placed with arrow keys or a click beside it.
+  const onClick = (e: MouseEvent) => {
+    if (!onWikilink) return;
+    const anchor = (e.target as HTMLElement | null)?.closest?.("a[data-wikilink]");
+    if (!anchor || !dom.contains(anchor)) return;
+    const target = anchor.getAttribute("data-wikilink");
+    if (!target) return;
+    e.preventDefault();
+    onWikilink(target);
+  };
   dom.addEventListener("input", onInput);
+  dom.addEventListener("click", onClick);
   document.addEventListener("selectionchange", onSel);
   emit();
 
@@ -188,6 +204,7 @@ export function mount(
     destroy: () => {
       clearTimeout(t);
       dom.removeEventListener("input", onInput);
+      dom.removeEventListener("click", onClick);
       document.removeEventListener("selectionchange", onSel);
       run(() => editor.unmount());
     },

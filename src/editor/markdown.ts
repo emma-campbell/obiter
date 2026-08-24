@@ -18,8 +18,25 @@ import rehypeStringify from "rehype-stringify";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 import remarkStringify, { type Options as RemarkStringifyOptions } from "remark-stringify";
+import type { Options as RemarkRehypeOptions } from "remark-rehype";
+import type { Options as RehypeRemarkOptions } from "rehype-remark";
+import {
+  remarkWikilinks,
+  wikilinkOrLinkFromHast,
+  wikilinkToHast,
+  wikilinkToMarkdown,
+} from "./wikilinks";
 
-const MD_OUT: RemarkStringifyOptions = {
+// The wikilink node is Obiter's own inline type, unknown to the mdast/hast
+// type unions these handler maps are keyed on — hence the casts.
+const WIKILINK_TO_HAST = {
+  handlers: { wikilink: wikilinkToHast },
+} as unknown as RemarkRehypeOptions;
+const WIKILINK_FROM_HAST = {
+  handlers: { a: wikilinkOrLinkFromHast },
+} as unknown as RehypeRemarkOptions;
+
+const MD_OUT = {
   bullet: "-",
   emphasis: "_",
   strong: "*",
@@ -28,7 +45,8 @@ const MD_OUT: RemarkStringifyOptions = {
   listItemIndent: "one",
   rule: "-",
   tightDefinitions: true,
-};
+  handlers: { wikilink: wikilinkToMarkdown },
+} as unknown as RemarkStringifyOptions;
 
 // GFM (tables, task lists, strikethrough) on both directions so those
 // constructs survive the round-trip. Frontmatter is handled separately —
@@ -40,7 +58,8 @@ export function mdToHtml(md: string): string {
     unified()
       .use(remarkParse)
       .use(remarkGfm)
-      .use(remarkRehype)
+      .use(remarkWikilinks)
+      .use(remarkRehype, WIKILINK_TO_HAST)
       .use(rehypeStringify)
       .processSync(md),
   );
@@ -50,7 +69,11 @@ export function htmlToMd(html: string): string {
   const out = String(
     unified()
       .use(rehypeParse, { fragment: true })
-      .use(rehypeRemark)
+      .use(rehypeRemark, WIKILINK_FROM_HAST)
+      // Re-run the wikilink pass on the mdast side too: a [[link]] typed as
+      // plain text in the editor becomes a real wikilink node here, instead
+      // of reaching the serializer as text and getting bracket-escaped.
+      .use(remarkWikilinks)
       .use(remarkGfm)
       .use(remarkStringify, MD_OUT)
       .processSync(html),

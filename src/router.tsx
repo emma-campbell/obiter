@@ -16,6 +16,7 @@ import {
 import { Folder, PanelLeft, Plus, Settings as SettingsIcon } from "lucide-react";
 import { searchNotes } from "./notebook/client";
 import { useChooseFolder } from "./notebook/useChooseFolder";
+import { noteRef, resolveWikilink } from "./notebook/wikilinks";
 import { NotebookGate, useNotebookStatus } from "./app/NotebookGate";
 import { RecoveryToast } from "./app/RecoveryToast";
 import { RefreshProvider } from "./app/RefreshProvider";
@@ -23,7 +24,7 @@ import { Settings } from "./app/Settings";
 import { Sidebar } from "./app/Sidebar";
 import { Titlebar } from "./app/Titlebar";
 import { CommandPalette, type PaletteItem } from "./components/navigation/CommandPalette";
-import { ToastProvider, ToastViewport } from "./components/core/Toast";
+import { ToastProvider, ToastViewport, useToast } from "./components/core/Toast";
 import { TooltipProvider } from "./components/core/Tooltip";
 import { Editor } from "./notes/Editor";
 
@@ -160,9 +161,26 @@ function RootLayout() {
 function NoteRoute() {
   const { _splat: splat } = noteRoute.useParams();
   const path = splat ?? "";
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  // Follow a clicked [[wikilink]]: resolve it against the notebook and open
+  // the note. Navigating remounts the editor (keyed by path below), which
+  // flushes the outgoing note's save first. An unresolved target gets a
+  // toast — Obiter can't create notes yet, so there's nothing else to offer.
+  const followWikilink = (target: string) => {
+    void resolveWikilink(target, searchNotes).then(
+      (entry) => {
+        if (entry) return navigate({ to: "/notes/$", params: { _splat: entry.path } });
+        toast.add({ description: `No note called “${noteRef(target)}” in this notebook.` });
+      },
+      () => {}, // search failing (notebook missing?) is the refresh seam's concern
+    );
+  };
+
   // Key by path so switching notes remounts the editor — its unmount flushes
   // the outgoing note's pending save before the next note loads.
-  return <Editor key={path} path={path} />;
+  return <Editor key={path} path={path} onWikilink={followWikilink} />;
 }
 
 /**

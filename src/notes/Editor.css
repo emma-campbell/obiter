@@ -204,6 +204,11 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+/* Wikilinks are anchors without an href, so they don't get the pointer for
+   free; otherwise they share the ordinary link look above. */
+.obiter-pm a[data-wikilink] {
+  cursor: pointer;
+}
 .obiter-pm ::selection {
   background: var(--pencil-200);
 }
