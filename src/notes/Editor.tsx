@@ -13,6 +13,10 @@ export interface EditorProps {
   /** Notebook-relative path of the open note. Keyed by path, so switching
    *  notes remounts the editor — which flushes the outgoing note's save. */
   path: string;
+  /** A [[wikilink]] was clicked; the target is as written in the note.
+   *  Following it (resolution, navigation) is the shell's job — the editor
+   *  stays router-free. */
+  onWikilink?: (target: string) => void;
 }
 
 const STATUS_LABEL: Record<SaveState, string> = {
@@ -68,7 +72,7 @@ function FormatButton({
  * in open-note.ts; this renders it and forwards edits. There is no manual
  * save mode.
  */
-export function Editor({ path }: EditorProps) {
+export function Editor({ path, onWikilink }: EditorProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const pmRef = useRef<NoteEditor | null>(null);
   const [words, setWords] = useState(0);
@@ -78,6 +82,11 @@ export function Editor({ path }: EditorProps) {
   // The markdown to seed the editor with: set once the read lands, and again
   // if the note is reloaded after changing on disk.
   const body = state.status === "ready" ? state.body : null;
+
+  // Held in a ref so the mount effect doesn't remount the editor whenever
+  // the parent passes a fresh callback identity.
+  const onWikilinkRef = useRef(onWikilink);
+  onWikilinkRef.current = onWikilink;
 
   // Mount the editable editor once the body is in hand, and hand the note its
   // live document. Cleanup detaches before tearing the editor down, so no
@@ -93,6 +102,7 @@ export function Editor({ path }: EditorProps) {
           setWords(s.words);
         },
         onChange: () => note.edit(),
+        onWikilink: (target) => onWikilinkRef.current?.(target),
       },
       { editable: true },
     );

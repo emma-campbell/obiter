@@ -8,7 +8,7 @@
 
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { splitFrontmatter } from "./markdown";
-import { mount, type NoteEditor } from "./prosekit-editor";
+import { mount, type NoteEditor, type NoteEditorHandlers } from "./prosekit-editor";
 
 const fixtures = import.meta.glob("./fixtures/*.md", {
   eager: true,
@@ -24,10 +24,10 @@ const KNOWN_LOOSE = "nested-lists.md";
 let editors: NoteEditor[] = [];
 let els: HTMLElement[] = [];
 
-function open(body: string): NoteEditor {
+function open(body: string, handlers: NoteEditorHandlers = {}): NoteEditor {
   const el = document.createElement("div");
   document.body.appendChild(el);
-  const ed = mount(el, body, {}, { editable: true });
+  const ed = mount(el, body, handlers, { editable: true });
   editors.push(ed);
   els.push(el);
   return ed;
@@ -59,6 +59,22 @@ describe("ProseMirror round-trip (real editor path)", () => {
     expect(out).toMatch(/^- Groceries/m);
     expect(out).toMatch(/- Apples/);
     expect(out).toMatch(/1\. Dishes/);
+  });
+});
+
+describe("wikilink interaction", () => {
+  it("clicking a wikilink reports its target as written", () => {
+    const clicked: string[] = [];
+    open("See [[recipes/Dumplings#Folding]].\n", { onWikilink: (t) => clicked.push(t) });
+    const anchor = els[0].querySelector("a[data-wikilink]");
+    expect(anchor).not.toBeNull();
+    anchor?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(clicked).toEqual(["recipes/Dumplings#Folding"]);
+  });
+
+  it("keeps a wikilink through the real editor after edits elsewhere", () => {
+    const ed = open("A [[Dumplings|snack]] link.\n");
+    expect(ed.getMarkdown()).toBe("A [[Dumplings|snack]] link.\n");
   });
 });
 
