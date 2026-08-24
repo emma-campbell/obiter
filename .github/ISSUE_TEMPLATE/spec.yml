@@ -1,0 +1,41 @@
+name: Spec
+description: A piece of work, written to the shape the tracker already uses.
+labels: ["spec"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the words from `CONTEXT.md` — notebook, folder, note, open note, refresh.
+        If the work isn't grillable yet, say so in "What to build" and leave the
+        acceptance criteria as the questions that need answering first.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What to build
+      description: What changes, and why it's worth doing. Name the constraints that bind it.
+      placeholder: |
+        Fenced code blocks currently render monochrome. Add real syntax highlighting
+        via a highlighter wired into ProseMirror as a node view or decorations.
+        Must stay self-hosted (adr/0001 — the app must not phone home).
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist. One box per thing that has to be true before this closes.
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: input
+    id: depends
+    attributes:
+      label: Depends on
+      description: Issues that must land first. Leave blank if nothing blocks this.
+      placeholder: "#32 (round-trip fidelity) for the lossless baseline"
+    validations:
+      required: false
